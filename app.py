@@ -1,0 +1,352 @@
+from flask import Flask, render_template, request, jsonify, send_file
+from flask_sqlalchemy import SQLAlchemy
+import pandas as pd
+import os
+import openpyxl
+from datetime import datetime
+
+
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///weather_data.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['UPLOAD_FOLDER'] = 'uploads'
+
+db = SQLAlchemy(app)
+
+# Create uploads folder if it doesn't exist
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+
+# Database Model
+class WeatherData(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.Date, nullable=False, index=True)
+    station_pressure_morning = db.Column(db.Float)
+    station_pressure_evening = db.Column(db.Float)
+    sea_level_pressure_morning = db.Column(db.Float)
+    sea_level_pressure_evening = db.Column(db.Float)
+    max_temp = db.Column(db.Float)
+    min_temp = db.Column(db.Float)
+    vapour_pressure_morning = db.Column(db.Float)
+    vapour_pressure_evening = db.Column(db.Float)
+    humidity_morning = db.Column(db.Float)
+    humidity_evening = db.Column(db.Float)
+    rainfall = db.Column(db.Float)
+    location = db.Column(db.String(100), index=True)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'date': self.date.strftime('%Y-%m-%d'),
+            'station_pressure_morning': self.station_pressure_morning,
+            'station_pressure_evening': self.station_pressure_evening,
+            'sea_level_pressure_morning': self.sea_level_pressure_morning,
+            'sea_level_pressure_evening': self.sea_level_pressure_evening,
+            'max_temp': self.max_temp,
+            'min_temp': self.min_temp,
+            'vapour_pressure_morning': self.vapour_pressure_morning,
+            'vapour_pressure_evening': self.vapour_pressure_evening,
+            'humidity_morning': self.humidity_morning,
+            'humidity_evening': self.humidity_evening,
+            'rainfall': self.rainfall,
+            'location': self.location
+        }
+
+
+def load_excel_data(file_path):
+    try:
+        if WeatherData.query.first():
+            print("Data already exists in database. Skipping import.")
+            return True
+
+        df = pd.read_csv(file_path) if file_path.endswith('.csv') else pd.read_excel(file_path)
+
+        column_mapping = {
+            'DATE': 'date',
+            'STATION LEVEL PRESSURE 0830 IST': 'station_pressure_morning',
+            'STATION LEVEL PRESSURE1730 IST': 'station_pressure_evening',
+            'MEAN SEA LEVEL PRESSURE0830 IST': 'sea_level_pressure_morning',
+            'MEAN SEA LEVEL PRESSURE1730 IST': 'sea_level_pressure_evening',
+            'MAX TEMP': 'max_temp',
+            'MIN TEMP': 'min_temp',
+            'VAPOUR PRESSURE0830 IST': 'vapour_pressure_morning',
+            'VAPOUR PRESSURE1730 IST': 'vapour_pressure_evening',
+            'RELATIVE HUMIDITY ( %)0830 IST': 'humidity_morning',
+            'RELATIVE HUMIDITY ( %)1730 IST': 'humidity_evening',
+            'RAIN FALL    (IN MM)': 'rainfall',
+            'LOCATION': 'location'
+        }
+
+        df.rename(columns=column_mapping, inplace=True)
+
+        for i, row in df.iterrows():
+            try:
+                if pd.isna(row.get('date')):
+                    continue
+
+                parsed_date = pd.to_datetime(row['date'], errors='coerce')
+                if pd.isna(parsed_date):
+                    print(f"Skipping row {i}: Invalid date '{row['date']}'")
+                    continue
+
+                weather_data = WeatherData(
+                    date=parsed_date.date(),
+                    station_pressure_morning=safe_float(row.get('station_pressure_morning')),
+                    station_pressure_evening=safe_float(row.get('station_pressure_evening')),
+                    sea_level_pressure_morning=safe_float(row.get('sea_level_pressure_morning')),
+                    sea_level_pressure_evening=safe_float(row.get('sea_level_pressure_evening')),
+                    max_temp=safe_float(row.get('max_temp')),
+                    min_temp=safe_float(row.get('min_temp')),
+                    vapour_pressure_morning=safe_float(row.get('vapour_pressure_morning')),
+                    vapour_pressure_evening=safe_float(row.get('vapour_pressure_evening')),
+                    humidity_morning=safe_float(row.get('humidity_morning')),
+                    humidity_evening=safe_float(row.get('humidity_evening')),
+                    rainfall=safe_float(row.get('rainfall')),
+                    location=str(row.get('location', '')).strip()
+                )
+
+                db.session.add(weather_data)
+
+            except Exception as row_err:
+                print(f"Row {i} failed to import: {row_err}")
+                continue
+
+        db.session.commit()
+        print(f"Successfully loaded {WeatherData.query.count()} records.")
+        return True
+
+    except Exception as e:
+        print(f"Error loading data: {e}")
+        return False
+
+
+def safe_float(value):
+    if pd.isna(value) or value == '' or value is None:
+        return None
+    try:
+        return float(value)
+    except (ValueError, TypeError):
+        return None
+
+
+@app.route('/')
+def dashboard():
+    # unique locations for dropdown
+    locations = db.session.query(WeatherData.location.distinct()).filter(
+        WeatherData.location.isnot(None),
+        WeatherData.location != ''
+    ).all()
+    locations = [loc[0] for loc in locations if loc[0]]
+
+    # date range
+    date_range = db.session.query(
+        db.func.min(WeatherData.date),
+        db.func.max(WeatherData.date)
+    ).first()
+
+    return render_template('dashboard.html', locations=locations, min_date=date_range[0], max_date=date_range[1])
+
+
+@app.route('/query', methods=['POST'])
+def query_data():
+    try:
+        data = request.json
+        query = WeatherData.query
+
+        # Date filters
+        if data.get('start_date'):
+            start_date = datetime.strptime(data['start_date'], '%Y-%m-%d').date()
+            query = query.filter(WeatherData.date >= start_date)
+
+        if data.get('end_date'):
+            end_date = datetime.strptime(data['end_date'], '%Y-%m-%d').date()
+            query = query.filter(WeatherData.date <= end_date)
+
+        # Location filter
+        if data.get('location'):
+            query = query.filter(WeatherData.location == data['location'])
+
+        # Temperature filters
+        if data.get('min_temp_min'):
+            query = query.filter(WeatherData.min_temp >= float(data['min_temp_min']))
+        if data.get('min_temp_max'):
+            query = query.filter(WeatherData.min_temp <= float(data['min_temp_max']))
+        if data.get('max_temp_min'):
+            query = query.filter(WeatherData.max_temp >= float(data['max_temp_min']))
+        if data.get('max_temp_max'):
+            query = query.filter(WeatherData.max_temp <= float(data['max_temp_max']))
+
+        # Rainfall filter
+        if data.get('rainfall_min'):
+            query = query.filter(WeatherData.rainfall >= float(data['rainfall_min']))
+        if data.get('rainfall_max'):
+            query = query.filter(WeatherData.rainfall <= float(data['rainfall_max']))
+
+        # Humidity filters
+        if data.get('humidity_min'):
+            query = query.filter(
+                db.or_(
+                    WeatherData.humidity_morning >= float(data['humidity_min']),
+                    WeatherData.humidity_evening >= float(data['humidity_min'])
+                )
+            )
+        if data.get('humidity_max'):
+            query = query.filter(
+                db.or_(
+                    WeatherData.humidity_morning <= float(data['humidity_max']),
+                    WeatherData.humidity_evening <= float(data['humidity_max'])
+                )
+            )
+
+        page = data.get('page', 1)
+        per_page = data.get('per_page', 100)
+        results = query.order_by(WeatherData.date.desc()).paginate(
+            page=page, per_page=per_page, error_out=False
+        )
+
+        return jsonify({
+            'success': True,
+            'data': [record.to_dict() for record in results.items],
+            'total': results.total,
+            'pages': results.pages,
+            'current_page': results.page
+        })
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/download', methods=['POST'])
+def download_data():
+    try:
+        data = request.json
+        query = WeatherData.query
+
+        # Fetch data from DB
+        if data.get('start_date'):
+            start_date = datetime.strptime(data['start_date'], '%Y-%m-%d').date()
+            query = query.filter(WeatherData.date >= start_date)
+        if data.get('end_date'):
+            end_date = datetime.strptime(data['end_date'], '%Y-%m-%d').date()
+            query = query.filter(WeatherData.date <= end_date)
+        if data.get('location'):
+            query = query.filter(WeatherData.location == data['location'])
+        if data.get('min_temp_min'):
+            query = query.filter(WeatherData.min_temp >= float(data['min_temp_min']))
+        if data.get('min_temp_max'):
+            query = query.filter(WeatherData.min_temp <= float(data['min_temp_max']))
+        if data.get('max_temp_min'):
+            query = query.filter(WeatherData.max_temp >= float(data['max_temp_min']))
+        if data.get('max_temp_max'):
+            query = query.filter(WeatherData.max_temp <= float(data['max_temp_max']))
+        if data.get('rainfall_min'):
+            query = query.filter(WeatherData.rainfall >= float(data['rainfall_min']))
+        if data.get('rainfall_max'):
+            query = query.filter(WeatherData.rainfall <= float(data['rainfall_max']))
+        if data.get('humidity_min'):
+            query = query.filter(
+                db.or_(
+                    WeatherData.humidity_morning >= float(data['humidity_min']),
+                    WeatherData.humidity_evening >= float(data['humidity_min'])
+                )
+            )
+        if data.get('humidity_max'):
+            query = query.filter(
+                db.or_(
+                    WeatherData.humidity_morning <= float(data['humidity_max']),
+                    WeatherData.humidity_evening <= float(data['humidity_max'])
+                )
+            )
+
+        results = query.order_by(WeatherData.date.desc()).all()
+
+        # New DF (for download)
+        df_data = []
+        for record in results:
+            df_data.append({
+                'Date': record.date.strftime('%Y-%m-%d'),
+                'Station Pressure (Morning)': record.station_pressure_morning,
+                'Station Pressure (Evening)': record.station_pressure_evening,
+                'Sea Level Pressure (Morning)': record.sea_level_pressure_morning,
+                'Sea Level Pressure (Evening)': record.sea_level_pressure_evening,
+                'Max Temperature': record.max_temp,
+                'Min Temperature': record.min_temp,
+                'Vapour Pressure (Morning)': record.vapour_pressure_morning,
+                'Vapour Pressure (Evening)': record.vapour_pressure_evening,
+                'Humidity (Morning)': record.humidity_morning,
+                'Humidity (Evening)': record.humidity_evening,
+                'Rainfall (mm)': record.rainfall,
+                'Location': record.location
+            })
+
+        df = pd.DataFrame(df_data)
+
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"weather_data_{timestamp[0:4]}_{timestamp[4:6]}_{timestamp[6:8]}.xlsx"
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+
+        with pd.ExcelWriter(filepath, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='Weather Data')
+
+        if not os.path.exists(filepath) or os.path.getsize(filepath) == 0:
+            raise Exception("Failed to create Excel file or file is empty")
+
+        return send_file(
+            filepath,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=filename
+        )
+
+    except Exception as e:
+        print(f"Download error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/stats')
+def get_stats():
+    try:
+        total_records = WeatherData.query.count()
+        locations_count = db.session.query(WeatherData.location.distinct()).count()
+
+        date_range = db.session.query(
+            db.func.min(WeatherData.date),
+            db.func.max(WeatherData.date)
+        ).first()
+
+        avg_temp = db.session.query(
+            db.func.avg(WeatherData.max_temp),
+            db.func.avg(WeatherData.min_temp)
+        ).first()
+
+        return jsonify({
+            'total_records': total_records,
+            'locations': locations_count,
+            'date_range': {
+                'start': date_range[0].strftime('%Y-%m-%d') if date_range[0] else None,
+                'end': date_range[1].strftime('%Y-%m-%d') if date_range[1] else None
+            },
+            'avg_temps': {
+                'max': round(avg_temp[0], 2) if avg_temp[0] else None,
+                'min': round(avg_temp[1], 2) if avg_temp[1] else None
+            }
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
+
+if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
+
+        excel_file_path = 'weather_data.xlsx'
+        csv_file_path = 'weather_data.csv'
+
+        if os.path.exists(excel_file_path):
+            load_excel_data(excel_file_path)
+        elif os.path.exists(csv_file_path):
+            load_excel_data(csv_file_path)
+        else:
+            print("No Excel or CSV file found. Place 'weather_data.xlsx' or 'weather_data.csv' in the same directory.")
+
+    app.run(debug=True)

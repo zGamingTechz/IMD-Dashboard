@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Data Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⛅ IMD Jaipur Dashboard</h1>
+            <p>Query and analyze your weather data with ease</p>
+        </div>
+
+        <div class="dashboard-grid">
+            <!-- Filter Panel -->
+            <div class="card">
+                <h3>🔍 Search Filters</h3>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="startDate">Start Date</label>
+                        <input type="date" id="startDate" value="{{ min_date }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="endDate">End Date</label>
+                        <input type="date" id="endDate" value="{{ max_date }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="location">Location</label>
+                        <select id="location">
+                            <option value="">All Locations</option>
+                            {% for location in locations %}
+                            <option value="{{ location }}">{{ location }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <h4 style="margin: 20px 0 10px 0; color: #4a5568; font-size: 1.1rem;">🌡️ Temperature Range</h4>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="minTempMin">Min Temp (°C) ≥</label>
+                        <input type="number" id="minTempMin" step="0.1" placeholder="e.g., 15">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="minTempMax">Min Temp (°C) ≤</label>
+                        <input type="number" id="minTempMax" step="0.1" placeholder="e.g., 25">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="maxTempMin">Max Temp (°C) ≥</label>
+                        <input type="number" id="maxTempMin" step="0.1" placeholder="e.g., 20">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="maxTempMax">Max Temp (°C) ≤</label>
+                        <input type="number" id="maxTempMax" step="0.1" placeholder="e.g., 35">
+                    </div>
+                </div>
+
+                <h4 style="margin: 20px 0 10px 0; color: #4a5568; font-size: 1.1rem;">💧 Other Parameters</h4>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="rainfallMin">Rainfall (mm) ≥</label>
+                        <input type="number" id="rainfallMin" step="0.1" placeholder="e.g., 0">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="rainfallMax">Rainfall (mm) ≤</label>
+                        <input type="number" id="rainfallMax" step="0.1" placeholder="e.g., 100">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="humidityMin">Humidity (%) ≥</label>
+                        <input type="number" id="humidityMin" min="0" max="100" placeholder="e.g., 40">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="humidityMax">Humidity (%) ≤</label>
+                        <input type="number" id="humidityMax" min="0" max="100" placeholder="e.g., 90">
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="searchData()">
+                        🔍 Search Data
+                    </button>
+                    <button class="btn btn-secondary" onclick="downloadData()">
+                        📥 Download Excel
+                    </button>
+                    <button class="btn btn-warning" onclick="clearFilters()">
+                        🔄 Clear Filters
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Panel -->
+            <div class="card">
+                <h3>📊 Database Statistics</h3>
+                <div class="stats-grid" id="statsContainer">
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalRecords">-</div>
+                        <div class="stat-label">Total Records</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="locationsCount">-</div>
+                        <div class="stat-label">Locations</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="avgMaxTemp">-</div>
+                        <div class="stat-label">Avg Max Temp</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="avgMinTemp">-</div>
+                        <div class="stat-label">Avg Min Temp</div>
+                    </div>
+                </div>
+
+                <h4 style="margin: 20px 0 10px 0; color: #4a5568; font-size: 1.1rem;">📈 Quick Actions</h4>
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="loadAllData()">
+                        📊 Load All Data
+                    </button>
+                    <button class="btn btn-secondary" onclick="loadRecentData()">
+                        🕒 Recent 30 Days
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="card results-section">
+            <h3>📋 Query Results</h3>
+
+            <div id="messageContainer"></div>
+
+            <div id="loadingContainer" class="loading" style="display: none;">
+                <div class="spinner"></div>
+                <p>Loading data...</p>
+            </div>
+
+            <div id="resultsContainer" style="display: none;">
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Location</th>
+                                <th>Max Temp (°C)</th>
+                                <th>Min Temp (°C)</th>
+                                <th>Rainfall (mm)</th>
+                                <th>Humidity Morning (%)</th>
+                                <th>Humidity Evening (%)</th>
+                                <th>Station Pressure Morning</th>
+                                <th>Station Pressure Evening</th>
+                                <th>Sea Level Pressure Morning</th>
+                                <th>Sea Level Pressure Evening</th>
+                                <th>Vapour Pressure Morning</th>
+                                <th>Vapour Pressure Evening</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTableBody">
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="pagination" id="paginationContainer">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPage = 1;
+        let totalPages = 1;
+        let currentFilters = {};
+
+        // Load statistics on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStats();
+        });
+
+        function loadStats() {
+            fetch('/stats')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        console.error('Error loading stats:', data.error);
+                        return;
+                    }
+
+                    document.getElementById('totalRecords').textContent = data.total_records || 0;
+                    document.getElementById('locationsCount').textContent = data.locations || 0;
+                    document.getElementById('avgMaxTemp').textContent = data.avg_temps.max ? data.avg_temps.max + '°C' : 'N/A';
+                    document.getElementById('avgMinTemp').textContent = data.avg_temps.min ? data.avg_temps.min + '°C' : 'N/A';
+                })
+                .catch(error => {
+                    console.error('Error loading stats:', error);
+                });
+        }
+
+        function collectFilters() {
+            return {
+                start_date: document.getElementById('startDate').value,
+                end_date: document.getElementById('endDate').value,
+                location: document.getElementById('location').value,
+                min_temp_min: document.getElementById('minTempMin').value,
+                min_temp_max: document.getElementById('minTempMax').value,
+                max_temp_min: document.getElementById('maxTempMin').value,
+                max_temp_max: document.getElementById('maxTempMax').value,
+                rainfall_min: document.getElementById('rainfallMin').value,
+                rainfall_max: document.getElementById('rainfallMax').value,
+                humidity_min: document.getElementById('humidityMin').value,
+                humidity_max: document.getElementById('humidityMax').value
+            };
+        }
+
+        function searchData(page = 1) {
+            currentFilters = collectFilters();
+            currentFilters.page = page;
+            currentFilters.per_page = 100;
+
+            showLoading();
+
+            fetch('/query', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(currentFilters)
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+
+                if (data.success) {
+                    displayResults(data.data);
+                    updatePagination(data.current_page, data.pages, data.total);
+                    showMessage(`Found ${data.total} records`, 'success');
+                } else {
+                    showMessage('Error: ' + data.error, 'error');
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                showMessage('Error: ' + error.message, 'error');
+            });
+        }
+
+        function displayResults(data) {
+            const tbody = document.getElementById('dataTableBody');
+            tbody.innerHTML = '';
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="13" style="text-align: center; padding: 40px; color: #718096;">No data found matching your criteria</td></tr>';
+            } else {
+                data.forEach(record => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${record.date}</td>
+                        <td>${record.location || 'N/A'}</td>
+                        <td>${record.max_temp !== null ? record.max_temp.toFixed(1) : 'N/A'}</td>
+                        <td>${record.min_temp !== null ? record.min_temp.toFixed(1) : 'N/A'}</td>
+                        <td>${record.rainfall !== null ? record.rainfall.toFixed(1) : 'N/A'}</td>
+                        <td>${record.humidity_morning !== null ? record.humidity_morning.toFixed(1) : 'N/A'}</td>
+                        <td>${record.humidity_evening !== null ? record.humidity_evening.toFixed(1) : 'N/A'}</td>
+                        <td>${record.station_pressure_morning !== null ? record.station_pressure_morning.toFixed(2) : 'N/A'}</td>
+                        <td>${record.station_pressure_evening !== null ? record.station_pressure_evening.toFixed(2) : 'N/A'}</td>
+                        <td>${record.sea_level_pressure_morning !== null ? record.sea_level_pressure_morning.toFixed(2) : 'N/A'}</td>
+                        <td>${record.sea_level_pressure_evening !== null ? record.sea_level_pressure_evening.toFixed(2) : 'N/A'}</td>
+                        <td>${record.vapour_pressure_morning !== null ? record.vapour_pressure_morning.toFixed(2) : 'N/A'}</td>
+                        <td>${record.vapour_pressure_evening !== null ? record.vapour_pressure_evening.toFixed(2) : 'N/A'}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+
+            document.getElementById('resultsContainer').style.display = 'block';
+        }
+
+        function updatePagination(current, total, totalRecords) {
+            currentPage = current;
+            totalPages = total;
+
+            const container = document.getElementById('paginationContainer');
+            container.innerHTML = '';
+
+            if (total <= 1) return;
+
+            // Previous button
+            if (current > 1) {
+                const prevBtn = document.createElement('button');
+                prevBtn.textContent = '← Previous';
+                prevBtn.onclick = () => searchData(current - 1);
+                container.appendChild(prevBtn);
+            }
+
+            // Page numbers
+            const startPage = Math.max(1, current - 2);
+            const endPage = Math.min(total, current + 2);
+
+            for (let i = startPage; i <= endPage; i++) {
+                const pageBtn = document.createElement('button');
+                pageBtn.textContent = i;
+                pageBtn.className = i === current ? 'active' : '';
+                pageBtn.onclick = () => searchData(i);
+                container.appendChild(pageBtn);
+            }
+
+            // Next button
+            if (current < total) {
+                const nextBtn = document.createElement('button');
+                nextBtn.textContent = 'Next →';
+                nextBtn.onclick = () => searchData(current + 1);
+                container.appendChild(nextBtn);
+            }
+
+            // Show info
+            const info = document.createElement('div');
+            info.style.cssText = 'margin-top: 10px; text-align: center; color: #718096; font-size: 0.9rem;';
+            info.textContent = `Page ${current} of ${total} (${totalRecords} total records)`;
+            container.appendChild(info);
+        }
+
+        function downloadData() {
+            const filters = collectFilters();
+            showMessage('Preparing download...', 'info');
+
+            fetch('/download', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(filters)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(errorData => {
+                        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+                    }).catch(() => {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    });
+                }
+
+                // Get filename from response headers if available
+                const contentDisposition = response.headers.get('Content-Disposition');
+                let filename = 'weather_data.xlsx';
+                if (contentDisposition && contentDisposition.includes('filename=')) {
+                    filename = contentDisposition
+                        .split('filename=')[1]
+                        .replace(/"/g, '');
+                }
+
+                return response.blob().then(blob => ({ blob, filename }));
+            })
+            .then(({ blob, filename }) => {
+                // Check if blob has content
+                if (blob.size === 0) {
+                    throw new Error('Downloaded file is empty');
+                }
+
+                // Create download link
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = filename;
+
+                // Trigger download
+                document.body.appendChild(a);
+                a.click();
+
+                // Cleanup
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                }, 100);
+
+                showMessage('Download completed successfully!', 'success');
+            })
+            .catch(error => {
+                console.error('Download error:', error);
+                showMessage('Download error: ' + error.message, 'error');
+            });
+        }
+
+        function clearFilters() {
+            document.getElementById('startDate').value = '';
+            document.getElementById('endDate').value = '';
+            document.getElementById('location').value = '';
+            document.getElementById('minTempMin').value = '';
+            document.getElementById('minTempMax').value = '';
+            document.getElementById('maxTempMin').value = '';
+            document.getElementById('maxTempMax').value = '';
+            document.getElementById('rainfallMin').value = '';
+            document.getElementById('rainfallMax').value = '';
+            document.getElementById('humidityMin').value = '';
+            document.getElementById('humidityMax').value = '';
+
+            document.getElementById('resultsContainer').style.display = 'none';
+            document.getElementById('paginationContainer').innerHTML = '';
+            showMessage('Filters cleared', 'info');
+        }
+
+        function loadAllData() {
+            clearFilters();
+            searchData();
+        }
+
+        function loadRecentData() {
+            clearFilters();
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            document.getElementById('startDate').value = thirtyDaysAgo.toISOString().split('T')[0];
+            document.getElementById('endDate').value = new Date().toISOString().split('T')[0];
+            searchData();
+        }
+
+        function showLoading() {
+            document.getElementById('loadingContainer').style.display = 'block';
+            document.getElementById('resultsContainer').style.display = 'none';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingContainer').style.display = 'none';
+        }
+
+        function showMessage(message, type) {
+            const container = document.getElementById('messageContainer');
+            const messageDiv = document.createElement('div');
+
+            let className = 'success-message';
+            if (type === 'error') className = 'error-message';
+            else if (type === 'info') className = 'success-message';
+
+            messageDiv.className = className;
+            messageDiv.textContent = message;
+
+            container.innerHTML = '';
+            container.appendChild(messageDiv);
+
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
+        }
+
+        // Handle Enter key in input fields
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchData();
+            }
+        });
+    </script>
+</body>
+</html>
