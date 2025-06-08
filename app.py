@@ -2,8 +2,14 @@ from flask import Flask, render_template, request, jsonify, send_file
 from flask_sqlalchemy import SQLAlchemy
 import pandas as pd
 import os
-import openpyxl
 from datetime import datetime
+import matplotlib
+# To use non-interactive backend
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+from io import BytesIO
+import base64
 
 
 app = Flask(__name__)
@@ -333,6 +339,143 @@ def get_stats():
         })
     except Exception as e:
         return jsonify({'error': str(e)})
+
+
+@app.route('/plot', methods=['POST'])
+def generate_plot():
+    try:
+        data = request.json
+        plot_type = data.get('plot_type', 'temperature_trend')
+
+        query = WeatherData.query
+
+        if data.get('start_date'):
+            start_date = datetime.strptime(data['start_date'], '%Y-%m-%d').date()
+            query = query.filter(WeatherData.date >= start_date)
+        if data.get('end_date'):
+            end_date = datetime.strptime(data['end_date'], '%Y-%m-%d').date()
+            query = query.filter(WeatherData.date <= end_date)
+        if data.get('location'):
+            query = query.filter(WeatherData.location == data['location'])
+        if data.get('min_temp_min'):
+            query = query.filter(WeatherData.min_temp >= float(data['min_temp_min']))
+        if data.get('min_temp_max'):
+            query = query.filter(WeatherData.min_temp <= float(data['min_temp_max']))
+        if data.get('max_temp_min'):
+            query = query.filter(WeatherData.max_temp >= float(data['max_temp_min']))
+        if data.get('max_temp_max'):
+            query = query.filter(WeatherData.max_temp <= float(data['max_temp_max']))
+        if data.get('rainfall_min'):
+            query = query.filter(WeatherData.rainfall >= float(data['rainfall_min']))
+        if data.get('rainfall_max'):
+            query = query.filter(WeatherData.rainfall <= float(data['rainfall_max']))
+        if data.get('humidity_min'):
+            query = query.filter(
+                db.or_(
+                    WeatherData.humidity_morning >= float(data['humidity_min']),
+                    WeatherData.humidity_evening >= float(data['humidity_min'])
+                )
+            )
+        if data.get('humidity_max'):
+            query = query.filter(
+                db.or_(
+                    WeatherData.humidity_morning <= float(data['humidity_max']),
+                    WeatherData.humidity_evening <= float(data['humidity_max'])
+                )
+            )
+
+        results = query.order_by(WeatherData.date.asc()).all()
+
+        if not results:
+            return jsonify({'success': False, 'error': 'No data found for plotting'})
+
+        plt.style.use('default')
+        fig, ax = plt.subplots(figsize=(12, 6))
+        fig.patch.set_facecolor('white')
+
+        dates = [record.date for record in results]
+
+        if plot_type == 'temperature_trend':
+            max_temps = [record.max_temp for record in results if record.max_temp is not None]
+            min_temps = [record.min_temp for record in results if record.min_temp is not None]
+            valid_dates_max = [record.date for record in results if record.max_temp is not None]
+            valid_dates_min = [record.date for record in results if record.min_temp is not None]
+
+            ax.plot(valid_dates_max, max_temps, 'r-', label='Max Temperature', linewidth=2)
+            ax.plot(valid_dates_min, min_temps, 'b-', label='Min Temperature', linewidth=2)
+            ax.set_title('Temperature Trend Over Time', fontsize=16, fontweight='bold')
+            ax.set_ylabel('Temperature (°C)', fontsize=12)
+
+        elif plot_type == 'rainfall_pattern':
+            rainfall = [record.rainfall if record.rainfall is not None else 0 for record in results]
+            ax.bar(dates, rainfall, color='skyblue', alpha=0.7)
+            ax.set_title('Rainfall Pattern', fontsize=16, fontweight='bold')
+            ax.set_ylabel('Rainfall (mm)', fontsize=12)
+
+        elif plot_type == 'humidity_comparison':
+            morning_humidity = [record.humidity_morning for record in results if record.humidity_morning is not None]
+            evening_humidity = [record.humidity_evening for record in results if record.humidity_evening is not None]
+            valid_dates_morning = [record.date for record in results if record.humidity_morning is not None]
+            valid_dates_evening = [record.date for record in results if record.humidity_evening is not None]
+
+            ax.plot(valid_dates_morning, morning_humidity, 'g-', label='Morning Humidity', linewidth=2)
+            ax.plot(valid_dates_evening, evening_humidity, 'orange', label='Evening Humidity', linewidth=2)
+            ax.set_title('Humidity Comparison (Morning vs Evening)', fontsize=16, fontweight='bold')
+            ax.set_ylabel('Humidity (%)', fontsize=12)
+
+        elif plot_type == 'pressure_analysis':
+            morning_pressure = [record.station_pressure_morning for record in results if
+                                record.station_pressure_morning is not None]
+            evening_pressure = [record.station_pressure_evening for record in results if
+                                record.station_pressure_evening is not None]
+            valid_dates_morning = [record.date for record in results if record.station_pressure_morning is not None]
+            valid_dates_evening = [record.date for record in results if record.station_pressure_evening is not None]
+
+            ax.plot(valid_dates_morning, morning_pressure, 'purple', label='Morning Pressure', linewidth=2)
+            ax.plot(valid_dates_evening, evening_pressure, 'brown', label='Evening Pressure', linewidth=2)
+            ax.set_title('Station Pressure Analysis', fontsize=16, fontweight='bold')
+            ax.set_ylabel('Pressure (hPa)', fontsize=12)
+
+        elif plot_type == 'temp_rainfall_correlation':
+            # Scatter plot of temperature vs rainfall
+            max_temps = [record.max_temp for record in results if
+                         record.max_temp is not None and record.rainfall is not None]
+            rainfall = [record.rainfall for record in results if
+                        record.max_temp is not None and record.rainfall is not None]
+
+            ax.scatter(max_temps, rainfall, alpha=0.6, color='coral')
+            ax.set_title('Temperature vs Rainfall Correlation', fontsize=16, fontweight='bold')
+            ax.set_xlabel('Max Temperature (°C)', fontsize=12)
+            ax.set_ylabel('Rainfall (mm)', fontsize=12)
+
+        # Format dates on x-axis
+        if plot_type != 'temp_rainfall_correlation':
+            ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+            ax.xaxis.set_major_locator(mdates.MonthLocator())
+            plt.setp(ax.xaxis.get_majorticklabels(), rotation=45)
+            ax.set_xlabel('Date', fontsize=12)
+
+        if plot_type in ['temperature_trend', 'humidity_comparison', 'pressure_analysis']:
+            ax.legend()
+        ax.grid(True, alpha=0.3)
+        plt.tight_layout()
+
+        # Convert plot to base64 string
+        img_buffer = BytesIO()
+        plt.savefig(img_buffer, format='png', dpi=150, bbox_inches='tight')
+        img_buffer.seek(0)
+        img_data = base64.b64encode(img_buffer.getvalue()).decode()
+        plt.close()
+
+        return jsonify({
+            'success': True,
+            'plot_data': f'data:image/png;base64,{img_data}',
+            'plot_type': plot_type
+        })
+
+    except Exception as e:
+        plt.close()
+        return jsonify({'success': False, 'error': str(e)})
 
 
 if __name__ == '__main__':

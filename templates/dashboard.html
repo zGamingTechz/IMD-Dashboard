@@ -36,6 +36,7 @@
                             {% for location in locations %}
                             <option value="{{ location }}">{{ location }}</option>
                             {% endfor %}
+
                         </select>
                     </div>
                 </div>
@@ -129,6 +130,32 @@
                     <button class="btn btn-secondary" onclick="loadRecentData()">
                         🕒 Recent 30 Days
                     </button>
+                </div>
+
+                <!-- Plot Container -->
+                <div id="plotContainer" style="margin-top: 20px; display: none;">
+                    <h4 style="margin: 10px 0; color: #4a5568; font-size: 1.1rem;">📈 Data Visualization</h4>
+                    <div id="plotImageContainer" style="text-align: center; margin: 15px 0;">
+                        <img id="plotImage" style="max-width: 100%; height: auto; border: 1px solid #e2e8f0; border-radius: 8px;" />
+                    </div>
+
+                    <div class="button-group" style="flex-wrap: wrap; gap: 8px;">
+                        <button class="btn btn-primary" onclick="generatePlot('temperature_trend')" style="font-size: 0.85rem; padding: 8px 12px;">
+                            🌡️ Temperature Trend
+                        </button>
+                        <button class="btn btn-secondary" onclick="generatePlot('rainfall_pattern')" style="font-size: 0.85rem; padding: 8px 12px;">
+                            🌧️ Rainfall Pattern
+                        </button>
+                        <button class="btn btn-success" onclick="generatePlot('humidity_comparison')" style="font-size: 0.85rem; padding: 8px 12px;">
+                            💧 Humidity Compare
+                        </button>
+                        <button class="btn btn-info" onclick="generatePlot('pressure_analysis')" style="font-size: 0.85rem; padding: 8px 12px;">
+                            📊 Pressure Analysis
+                        </button>
+                        <button class="btn btn-warning" onclick="generatePlot('temp_rainfall_correlation')" style="font-size: 0.85rem; padding: 8px 12px;">
+                            🔗 Temp-Rain Correlation
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -242,6 +269,12 @@
                     displayResults(data.data);
                     updatePagination(data.current_page, data.pages, data.total);
                     showMessage(`Found ${data.total} records`, 'success');
+
+                    // Show plot container and generate default plot
+                    if (data.total > 0) {
+                        document.getElementById('plotContainer').style.display = 'block';
+                        generatePlot('temperature_trend');
+                    }
                 } else {
                     showMessage('Error: ' + data.error, 'error');
                 }
@@ -249,6 +282,33 @@
             .catch(error => {
                 hideLoading();
                 showMessage('Error: ' + error.message, 'error');
+            });
+        }
+
+        function generatePlot(plotType) {
+            const filters = collectFilters();
+            filters.plot_type = plotType;
+
+            showMessage('Generating plot...', 'info');
+
+            fetch('/plot', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(filters)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('plotImage').src = data.plot_data;
+                    showMessage('Plot generated successfully!', 'success');
+                } else {
+                    showMessage('Plot error: ' + data.error, 'error');
+                }
+            })
+            .catch(error => {
+                showMessage('Plot error: ' + error.message, 'error');
             });
         }
 
@@ -403,6 +463,7 @@
             document.getElementById('humidityMax').value = '';
 
             document.getElementById('resultsContainer').style.display = 'none';
+            document.getElementById('plotContainer').style.display = 'none';
             document.getElementById('paginationContainer').innerHTML = '';
             showMessage('Filters cleared', 'info');
         }
