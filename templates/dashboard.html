@@ -296,7 +296,7 @@
         function searchData(page = 1) {
             currentFilters = collectFilters();
             currentFilters.page = page;
-            currentFilters.per_page = 100;
+            currentFilters.per_page = 10;
             showLoading();
             fetch('/query', {
                 method: 'POST',
