@@ -492,6 +492,11 @@ def generate_plot():
         return jsonify({'success': False, 'error': str(e)})
 
 
+@app.route('/upload')
+def upload_data():
+    pass
+
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
