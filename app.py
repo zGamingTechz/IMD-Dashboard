@@ -20,6 +20,8 @@ app.config['UPLOAD_FOLDER'] = 'uploads'
 
 db = SQLAlchemy(app)
 
+ALLOWED_EXTENSIONS = {'.xls', '.xlsx', '.csv'}
+
 # Create uploads folder if it doesn't exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
@@ -497,7 +499,13 @@ def generate_plot():
 def upload_data():
     file = request.files.get('file')
     if file:
-        filename = secure_filename("new_data")
+        filename = secure_filename(file.filename)
+        _, ext = os.path.splitext(filename)
+
+        if ext.lower() not in ALLOWED_EXTENSIONS:
+            return "Only Excel files are allowed", 400
+
+        filename = secure_filename("new_data" + ext)
         custom_path = os.path.join('new data', filename)
         os.makedirs(os.path.dirname(custom_path), exist_ok=True)
         file.save(custom_path)
