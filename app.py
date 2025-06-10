@@ -327,7 +327,7 @@ def get_stats():
 
         avg_rainfall = db.session.query(
             db.func.avg(WeatherData.rainfall)
-        )
+        ).first()
 
         return jsonify({
             'total_records': total_records,
@@ -340,7 +340,7 @@ def get_stats():
                 'max': round(avg_temp[0], 2) if avg_temp[0] else None,
                 'min': round(avg_temp[1], 2) if avg_temp[1] else None
             },
-            'avg_rainfall': avg_rainfall[0],
+            'avg_rainfall': round(avg_rainfall[0], 2),
         })
     except Exception as e:
         return jsonify({'error': str(e)})
