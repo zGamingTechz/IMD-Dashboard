@@ -64,10 +64,6 @@ class WeatherData(db.Model):
 
 def load_excel_data(file_path):
     try:
-        if WeatherData.query.first():
-            print("Data already exists in database. Skipping import.")
-            return True
-
         df = pd.read_csv(file_path) if file_path.endswith('.csv') else pd.read_excel(file_path)
 
         column_mapping = {
@@ -88,6 +84,9 @@ def load_excel_data(file_path):
 
         df.rename(columns=column_mapping, inplace=True)
 
+        imported = 0
+        skipped = 0
+
         for i, row in df.iterrows():
             try:
                 if pd.isna(row.get('date')):
@@ -98,30 +97,37 @@ def load_excel_data(file_path):
                     print(f"Skipping row {i}: Invalid date '{row['date']}'")
                     continue
 
-                weather_data = WeatherData(
-                    date=parsed_date.date(),
-                    station_pressure_morning=safe_float(row.get('station_pressure_morning')),
-                    station_pressure_evening=safe_float(row.get('station_pressure_evening')),
-                    sea_level_pressure_morning=safe_float(row.get('sea_level_pressure_morning')),
-                    sea_level_pressure_evening=safe_float(row.get('sea_level_pressure_evening')),
-                    max_temp=safe_float(row.get('max_temp')),
-                    min_temp=safe_float(row.get('min_temp')),
-                    vapour_pressure_morning=safe_float(row.get('vapour_pressure_morning')),
-                    vapour_pressure_evening=safe_float(row.get('vapour_pressure_evening')),
-                    humidity_morning=safe_float(row.get('humidity_morning')),
-                    humidity_evening=safe_float(row.get('humidity_evening')),
-                    rainfall=safe_float(row.get('rainfall')),
-                    location=str(row.get('location', '')).strip()
-                )
+                new_data = {
+                    'date': parsed_date.date(),
+                    'station_pressure_morning': safe_float(row.get('station_pressure_morning')),
+                    'station_pressure_evening': safe_float(row.get('station_pressure_evening')),
+                    'sea_level_pressure_morning': safe_float(row.get('sea_level_pressure_morning')),
+                    'sea_level_pressure_evening': safe_float(row.get('sea_level_pressure_evening')),
+                    'max_temp': safe_float(row.get('max_temp')),
+                    'min_temp': safe_float(row.get('min_temp')),
+                    'vapour_pressure_morning': safe_float(row.get('vapour_pressure_morning')),
+                    'vapour_pressure_evening': safe_float(row.get('vapour_pressure_evening')),
+                    'humidity_morning': safe_float(row.get('humidity_morning')),
+                    'humidity_evening': safe_float(row.get('humidity_evening')),
+                    'rainfall': safe_float(row.get('rainfall')),
+                    'location': str(row.get('location', '')).strip()
+                }
 
-                db.session.add(weather_data)
+                # Check if an exact same record exists
+                exists = WeatherData.query.filter_by(**new_data).first()
+                if exists:
+                    skipped += 1
+                    continue
+
+                db.session.add(WeatherData(**new_data))
+                imported += 1
 
             except Exception as row_err:
                 print(f"Row {i} failed to import: {row_err}")
                 continue
 
         db.session.commit()
-        print(f"Successfully loaded {WeatherData.query.count()} records.")
+        print(f"Import complete: {imported} added, {skipped} skipped.")
         return True
 
     except Exception as e:
