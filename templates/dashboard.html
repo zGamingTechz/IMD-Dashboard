@@ -176,7 +176,7 @@
                     </div>
                     <div class="stat-card">
                         <div class="stat-icon">
-                            <i class="fas fa-water"></i>
+                            <i class="fas fa-cloud"></i>
                         </div>
                         <div class="stat-info">
                             <div class="stat-value" id="avgHumMor">-</div>
@@ -185,7 +185,7 @@
                     </div>
                     <div class="stat-card">
                         <div class="stat-icon">
-                            <i class="fas fa-water"></i>
+                            <i class="fas fa-cloud"></i>
                         </div>
                         <div class="stat-info">
                             <div class="stat-value" id="avgHumEve">-</div>
@@ -299,6 +299,8 @@
                     document.getElementById('avgMaxTemp').textContent = data.avg_temps.max ? data.avg_temps.max + '°C' : 'N/A';
                     document.getElementById('avgMinTemp').textContent = data.avg_temps.min ? data.avg_temps.min + '°C' : 'N/A';
                     document.getElementById('avgRainfall').textContent = data.avg_rainfall ? data.avg_rainfall + 'mm' : 'N/A';
+                    document.getElementById('avgHumMor').textContent = data.avg_humidity.morning ? data.avg_humidity.morning : 'N/A';
+                    document.getElementById('avgHumEve').textContent = data.avg_humidity.evening ? data.avg_humidity.evening : 'N/A';
                 })
                 .catch(error => {
                     console.error('Error loading stats:', error);

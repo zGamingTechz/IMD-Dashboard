@@ -329,6 +329,11 @@ def get_stats():
             db.func.avg(WeatherData.rainfall)
         ).first()
 
+        avg_humidity = db.session.query(
+            db.func.avg(WeatherData.humidity_morning),
+            db.func.avg(WeatherData.humidity_evening)
+        ).first()
+
         return jsonify({
             'total_records': total_records,
             'locations': locations_count,
@@ -341,6 +346,10 @@ def get_stats():
                 'min': round(avg_temp[1], 2) if avg_temp[1] else None
             },
             'avg_rainfall': round(avg_rainfall[0], 2),
+            'avg_humidity': {
+                'morning': round(avg_humidity[0] if avg_humidity else None),
+                'evening': round(avg_humidity[1] if avg_humidity else None)
+            }
         })
     except Exception as e:
         return jsonify({'error': str(e)})
