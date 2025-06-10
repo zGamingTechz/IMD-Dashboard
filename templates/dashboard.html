@@ -559,6 +559,32 @@
                 searchData();
             }
         });
+
+        function downloadPlot() {
+            const plotImage = document.getElementById('plotImage');
+
+            if (!plotImage.src || plotImage.src === '') {
+                showMessage('No plot available to download. Please generate a plot first.', 'error');
+                return;
+            }
+
+            try {
+                // Create a temporary anchor element
+                const link = document.createElement('a');
+                link.href = plotImage.src;
+                link.download = `weather_plot_${new Date().getTime()}.png`;
+
+                // Temporarily add to DOM and click
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                showMessage('Plot downloaded successfully!', 'success');
+            } catch (error) {
+                console.error('Download error:', error);
+                showMessage('Error downloading plot: ' + error.message, 'error');
+            }
+        }
     </script>
 </body>
 </html>
