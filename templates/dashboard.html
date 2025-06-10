@@ -5,200 +5,248 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Weather Data Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>⛅ IMD Jaipur Dashboard</h1>
-            <p>Query and analyze your weather data with ease</p>
-        </div>
-
-        <div class="dashboard-grid">
-            <!-- Filter Panel -->
-            <div class="card">
-                <h3>🔍 Search Filters</h3>
-
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="startDate">Start Date</label>
-                        <input type="date" id="startDate" value="{{ min_date }}">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="endDate">End Date</label>
-                        <input type="date" id="endDate" value="{{ max_date }}">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="location">Location</label>
-                        <select id="location">
-                            <option value="">All Locations</option>
-                            {% for location in locations %}
-                            <option value="{{ location }}">{{ location }}</option>
-                            {% endfor %}
-
-                        </select>
-                    </div>
+    <div class="main-container">
+        <!-- Header Section -->
+        <header class="header-section">
+            <div class="header-content">
+                <div class="header-icon">
+                    <i class="fas fa-cloud-sun"></i>
                 </div>
-
-                <h4 style="margin: 20px 0 10px 0; color: #4a5568; font-size: 1.1rem;">🌡️ Temperature Range</h4>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="minTempMin">Min Temp (°C) ≥</label>
-                        <input type="number" id="minTempMin" step="0.1" placeholder="e.g., 15">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="minTempMax">Min Temp (°C) ≤</label>
-                        <input type="number" id="minTempMax" step="0.1" placeholder="e.g., 25">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="maxTempMin">Max Temp (°C) ≥</label>
-                        <input type="number" id="maxTempMin" step="0.1" placeholder="e.g., 20">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="maxTempMax">Max Temp (°C) ≤</label>
-                        <input type="number" id="maxTempMax" step="0.1" placeholder="e.g., 35">
-                    </div>
-                </div>
-
-                <h4 style="margin: 20px 0 10px 0; color: #4a5568; font-size: 1.1rem;">💧 Other Parameters</h4>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="rainfallMin">Rainfall (mm) ≥</label>
-                        <input type="number" id="rainfallMin" step="0.1" placeholder="e.g., 0">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="rainfallMax">Rainfall (mm) ≤</label>
-                        <input type="number" id="rainfallMax" step="0.1" placeholder="e.g., 100">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="humidityMin">Humidity (%) ≥</label>
-                        <input type="number" id="humidityMin" min="0" max="100" placeholder="e.g., 40">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="humidityMax">Humidity (%) ≤</label>
-                        <input type="number" id="humidityMax" min="0" max="100" placeholder="e.g., 90">
-                    </div>
-                </div>
-
-                <div class="button-group">
-                    <button class="btn btn-primary" onclick="searchData()">
-                        🔍 Search Data
-                    </button>
-                    <button class="btn btn-secondary" onclick="downloadData()">
-                        📥 Download Excel
-                    </button>
-                    <button class="btn btn-warning" onclick="clearFilters()">
-                        🔄 Clear Filters
-                    </button>
+                <div class="header-text">
+                    <h1>IMD Jaipur Weather Dashboard</h1>
+                    <p>Advanced weather data analytics and visualization platform</p>
                 </div>
             </div>
+        </header>
 
-            <!-- Stats Panel -->
-            <div class="card">
-                <h3>📊 Database Statistics</h3>
-                <div class="stats-grid" id="statsContainer">
-                    <div class="stat-item">
-                        <div class="stat-value" id="totalRecords">-</div>
-                        <div class="stat-label">Total Records</div>
+        <!-- Main Content -->
+        <div class="content-wrapper">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <div class="sidebar-section">
+                    <div class="section-header">
+                        <i class="fas fa-filter"></i>
+                        <h3>Search Filters</h3>
                     </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="locationsCount">-</div>
-                        <div class="stat-label">Locations</div>
+
+                    <!-- Date Range -->
+                    <div class="filter-group">
+                        <h4><i class="fas fa-calendar-alt"></i> Date Range</h4>
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label for="startDate">Start Date</label>
+                                <input type="date" id="startDate" value="{{ min_date }}" class="form-input">
+                            </div>
+                            <div class="input-group">
+                                <label for="endDate">End Date</label>
+                                <input type="date" id="endDate" value="{{ max_date }}" class="form-input">
+                            </div>
+                        </div>
                     </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="avgMaxTemp">-</div>
-                        <div class="stat-label">Avg Max Temp</div>
+
+                    <!-- Location Filter -->
+                    <div class="filter-group">
+                        <h4><i class="fas fa-map-marker-alt"></i> Location</h4>
+                        <div class="input-group">
+                            <select id="location" class="form-select">
+                                <option value="">All Locations</option>
+                                {% for location in locations %}
+                                <option value="{{ location }}">{{ location }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
                     </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="avgMinTemp">-</div>
-                        <div class="stat-label">Avg Min Temp</div>
+
+                    <!-- Temperature Range -->
+                    <div class="filter-group">
+                        <h4><i class="fas fa-thermometer-half"></i> Temperature Range (°C)</h4>
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label for="minTempMin">Min Temp ≥</label>
+                                <input type="number" id="minTempMin" step="0.1" placeholder="15" class="form-input">
+                            </div>
+                            <div class="input-group">
+                                <label for="minTempMax">Min Temp ≤</label>
+                                <input type="number" id="minTempMax" step="0.1" placeholder="25" class="form-input">
+                            </div>
+                        </div>
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label for="maxTempMin">Max Temp ≥</label>
+                                <input type="number" id="maxTempMin" step="0.1" placeholder="20" class="form-input">
+                            </div>
+                            <div class="input-group">
+                                <label for="maxTempMax">Max Temp ≤</label>
+                                <input type="number" id="maxTempMax" step="0.1" placeholder="35" class="form-input">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Other Parameters -->
+                    <div class="filter-group">
+                        <h4><i class="fas fa-tint"></i> Other Parameters</h4>
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label for="rainfallMin">Rainfall (mm) ≥</label>
+                                <input type="number" id="rainfallMin" step="0.1" placeholder="0" class="form-input">
+                            </div>
+                            <div class="input-group">
+                                <label for="rainfallMax">Rainfall (mm) ≤</label>
+                                <input type="number" id="rainfallMax" step="0.1" placeholder="100" class="form-input">
+                            </div>
+                        </div>
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label for="humidityMin">Humidity (%) ≥</label>
+                                <input type="number" id="humidityMin" min="0" max="100" placeholder="40" class="form-input">
+                            </div>
+                            <div class="input-group">
+                                <label for="humidityMax">Humidity (%) ≤</label>
+                                <input type="number" id="humidityMax" min="0" max="100" placeholder="90" class="form-input">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" onclick="searchData()">
+                            <i class="fas fa-search"></i> Search Data
+                        </button>
+                        <button class="btn btn-success" onclick="downloadData()">
+                            <i class="fas fa-download"></i> Download Excel
+                        </button>
+                        <button class="btn btn-warning" onclick="clearFilters()">
+                            <i class="fas fa-refresh"></i> Clear Filters
+                        </button>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main Content Area -->
+            <main class="main-content">
+                <!-- Stats Cards -->
+                <div class="stats-container">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-database"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="totalRecords">-</div>
+                            <div class="stat-label">Total Records</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-map-marked-alt"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="locationsCount">-</div>
+                            <div class="stat-label">Locations</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-temperature-high"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="avgMaxTemp">-</div>
+                            <div class="stat-label">Avg Max Temp</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-temperature-low"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="avgMinTemp">-</div>
+                            <div class="stat-label">Avg Min Temp</div>
+                        </div>
                     </div>
                 </div>
 
-                <h4 style="margin: 20px 0 10px 0; color: #4a5568; font-size: 1.1rem;">📈 Quick Actions</h4>
-                <div class="button-group">
-                    <button class="btn btn-primary" onclick="loadAllData()">
-                        📊 Load All Data
+                <!-- Quick Actions -->
+                <div class="quick-actions">
+                    <button class="btn btn-outline-primary" onclick="loadAllData()">
+                        <i class="fas fa-chart-line"></i> Load All Data
                     </button>
-                    <button class="btn btn-secondary" onclick="loadRecentData()">
-                        🕒 Recent 30 Days
+                    <button class="btn btn-outline-secondary" onclick="loadRecentData()">
+                        <i class="fas fa-clock"></i> Recent 30 Days
                     </button>
                 </div>
 
-                <!-- Plot Container -->
-                <div id="plotContainer" style="margin-top: 20px; display: none;">
-                    <h4 style="margin: 10px 0; color: #4a5568; font-size: 1.1rem;">📈 Data Visualization</h4>
-                    <div id="plotImageContainer" style="text-align: center; margin: 15px 0;">
-                        <img id="plotImage" style="max-width: 100%; height: auto; border: 1px solid #e2e8f0; border-radius: 8px;" />
+                <!-- Visualization Section -->
+                <div id="plotContainer" class="visualization-section" style="display: none;">
+                    <div class="section-header">
+                        <i class="fas fa-chart-area"></i>
+                        <h3>Data Visualization</h3>
+                    </div>
+                    <div class="plot-container">
+                        <img id="plotImage" class="plot-image" alt="Weather Data Visualization" />
+                    </div>
+                    <div class="plot-controls">
+                        <button class="btn btn-sm btn-primary" onclick="generatePlot('temperature_trend')">
+                            <i class="fas fa-thermometer-half"></i> Temperature
+                        </button>
+                        <button class="btn btn-sm btn-info" onclick="generatePlot('rainfall_pattern')">
+                            <i class="fas fa-cloud-rain"></i> Rainfall
+                        </button>
+                        <button class="btn btn-sm btn-success" onclick="generatePlot('humidity_comparison')">
+                            <i class="fas fa-tint"></i> Humidity
+                        </button>
+                        <button class="btn btn-sm btn-secondary" onclick="generatePlot('pressure_analysis')">
+                            <i class="fas fa-weight"></i> Pressure
+                        </button>
+                        <button class="btn btn-sm btn-warning" onclick="generatePlot('temp_rainfall_correlation')">
+                            <i class="fas fa-link"></i> Correlation
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Results Section -->
+                <div class="results-section">
+                    <div class="section-header">
+                        <i class="fas fa-table"></i>
+                        <h3>Query Results</h3>
                     </div>
 
-                    <div class="button-group" style="flex-wrap: wrap; gap: 8px;">
-                        <button class="btn btn-primary" onclick="generatePlot('temperature_trend')" style="font-size: 0.85rem; padding: 8px 12px;">
-                            🌡️ Temperature Trend
-                        </button>
-                        <button class="btn btn-secondary" onclick="generatePlot('rainfall_pattern')" style="font-size: 0.85rem; padding: 8px 12px;">
-                            🌧️ Rainfall Pattern
-                        </button>
-                        <button class="btn btn-success" onclick="generatePlot('humidity_comparison')" style="font-size: 0.85rem; padding: 8px 12px;">
-                            💧 Humidity Compare
-                        </button>
-                        <button class="btn btn-info" onclick="generatePlot('pressure_analysis')" style="font-size: 0.85rem; padding: 8px 12px;">
-                            📊 Pressure Analysis
-                        </button>
-                        <button class="btn btn-warning" onclick="generatePlot('temp_rainfall_correlation')" style="font-size: 0.85rem; padding: 8px 12px;">
-                            🔗 Temp-Rain Correlation
-                        </button>
+                    <div id="messageContainer"></div>
+
+                    <div id="loadingContainer" class="loading-container" style="display: none;">
+                        <div class="loading-spinner"></div>
+                        <p>Loading weather data...</p>
+                    </div>
+
+                    <div id="resultsContainer" class="table-section" style="display: none;">
+                        <div class="table-wrapper">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Location</th>
+                                        <th>Max Temp (°C)</th>
+                                        <th>Min Temp (°C)</th>
+                                        <th>Rainfall (mm)</th>
+                                        <th>Humidity Morning (%)</th>
+                                        <th>Humidity Evening (%)</th>
+                                        <th>Station Pressure Morning</th>
+                                        <th>Station Pressure Evening</th>
+                                        <th>Sea Level Pressure Morning</th>
+                                        <th>Sea Level Pressure Evening</th>
+                                        <th>Vapour Pressure Morning</th>
+                                        <th>Vapour Pressure Evening</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dataTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="pagination-wrapper" id="paginationContainer"></div>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- Results Section -->
-        <div class="card results-section">
-            <h3>📋 Query Results</h3>
-
-            <div id="messageContainer"></div>
-
-            <div id="loadingContainer" class="loading" style="display: none;">
-                <div class="spinner"></div>
-                <p>Loading data...</p>
-            </div>
-
-            <div id="resultsContainer" style="display: none;">
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Location</th>
-                                <th>Max Temp (°C)</th>
-                                <th>Min Temp (°C)</th>
-                                <th>Rainfall (mm)</th>
-                                <th>Humidity Morning (%)</th>
-                                <th>Humidity Evening (%)</th>
-                                <th>Station Pressure Morning</th>
-                                <th>Station Pressure Evening</th>
-                                <th>Sea Level Pressure Morning</th>
-                                <th>Sea Level Pressure Evening</th>
-                                <th>Vapour Pressure Morning</th>
-                                <th>Vapour Pressure Evening</th>
-                            </tr>
-                        </thead>
-                        <tbody id="dataTableBody">
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="pagination" id="paginationContainer">
-                </div>
-            </div>
+            </main>
         </div>
     </div>
 
@@ -207,7 +255,6 @@
         let totalPages = 1;
         let currentFilters = {};
 
-        // Load statistics on page load
         document.addEventListener('DOMContentLoaded', function() {
             loadStats();
         });
@@ -220,7 +267,6 @@
                         console.error('Error loading stats:', data.error);
                         return;
                     }
-
                     document.getElementById('totalRecords').textContent = data.total_records || 0;
                     document.getElementById('locationsCount').textContent = data.locations || 0;
                     document.getElementById('avgMaxTemp').textContent = data.avg_temps.max ? data.avg_temps.max + '°C' : 'N/A';
@@ -251,26 +297,19 @@
             currentFilters = collectFilters();
             currentFilters.page = page;
             currentFilters.per_page = 100;
-
             showLoading();
-
             fetch('/query', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(currentFilters)
             })
             .then(response => response.json())
             .then(data => {
                 hideLoading();
-
                 if (data.success) {
                     displayResults(data.data);
                     updatePagination(data.current_page, data.pages, data.total);
                     showMessage(`Found ${data.total} records`, 'success');
-
-                    // Show plot container and generate default plot
                     if (data.total > 0) {
                         document.getElementById('plotContainer').style.display = 'block';
                         generatePlot('temperature_trend');
@@ -288,14 +327,10 @@
         function generatePlot(plotType) {
             const filters = collectFilters();
             filters.plot_type = plotType;
-
             showMessage('Generating plot...', 'info');
-
             fetch('/plot', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(filters)
             })
             .then(response => response.json())
@@ -315,9 +350,8 @@
         function displayResults(data) {
             const tbody = document.getElementById('dataTableBody');
             tbody.innerHTML = '';
-
             if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="13" style="text-align: center; padding: 40px; color: #718096;">No data found matching your criteria</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="13" class="no-data">No data found matching your criteria</td></tr>';
             } else {
                 data.forEach(record => {
                     const row = document.createElement('tr');
@@ -339,50 +373,40 @@
                     tbody.appendChild(row);
                 });
             }
-
             document.getElementById('resultsContainer').style.display = 'block';
         }
 
         function updatePagination(current, total, totalRecords) {
             currentPage = current;
             totalPages = total;
-
             const container = document.getElementById('paginationContainer');
             container.innerHTML = '';
-
             if (total <= 1) return;
-
-            // Previous button
             if (current > 1) {
                 const prevBtn = document.createElement('button');
-                prevBtn.textContent = '← Previous';
+                prevBtn.className = 'pagination-btn';
+                prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i> Previous';
                 prevBtn.onclick = () => searchData(current - 1);
                 container.appendChild(prevBtn);
             }
-
-            // Page numbers
             const startPage = Math.max(1, current - 2);
             const endPage = Math.min(total, current + 2);
-
             for (let i = startPage; i <= endPage; i++) {
                 const pageBtn = document.createElement('button');
+                pageBtn.className = `pagination-btn ${i === current ? 'active' : ''}`;
                 pageBtn.textContent = i;
-                pageBtn.className = i === current ? 'active' : '';
                 pageBtn.onclick = () => searchData(i);
                 container.appendChild(pageBtn);
             }
-
-            // Next button
             if (current < total) {
                 const nextBtn = document.createElement('button');
-                nextBtn.textContent = 'Next →';
+                nextBtn.className = 'pagination-btn';
+                nextBtn.innerHTML = 'Next <i class="fas fa-chevron-right"></i>';
                 nextBtn.onclick = () => searchData(current + 1);
                 container.appendChild(nextBtn);
             }
-
-            // Show info
             const info = document.createElement('div');
-            info.style.cssText = 'margin-top: 10px; text-align: center; color: #718096; font-size: 0.9rem;';
+            info.className = 'pagination-info';
             info.textContent = `Page ${current} of ${total} (${totalRecords} total records)`;
             container.appendChild(info);
         }
@@ -390,12 +414,9 @@
         function downloadData() {
             const filters = collectFilters();
             showMessage('Preparing download...', 'info');
-
             fetch('/download', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(filters)
             })
             .then(response => {
@@ -406,41 +427,28 @@
                         throw new Error(`HTTP error! status: ${response.status}`);
                     });
                 }
-
-                // Get filename from response headers if available
                 const contentDisposition = response.headers.get('Content-Disposition');
                 let filename = 'weather_data.xlsx';
                 if (contentDisposition && contentDisposition.includes('filename=')) {
-                    filename = contentDisposition
-                        .split('filename=')[1]
-                        .replace(/"/g, '');
+                    filename = contentDisposition.split('filename=')[1].replace(/"/g, '');
                 }
-
                 return response.blob().then(blob => ({ blob, filename }));
             })
             .then(({ blob, filename }) => {
-                // Check if blob has content
                 if (blob.size === 0) {
                     throw new Error('Downloaded file is empty');
                 }
-
-                // Create download link
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.style.display = 'none';
                 a.href = url;
                 a.download = filename;
-
-                // Trigger download
                 document.body.appendChild(a);
                 a.click();
-
-                // Cleanup
                 setTimeout(() => {
                     document.body.removeChild(a);
                     window.URL.revokeObjectURL(url);
                 }, 100);
-
                 showMessage('Download completed successfully!', 'success');
             })
             .catch(error => {
@@ -450,18 +458,9 @@
         }
 
         function clearFilters() {
-            document.getElementById('startDate').value = '';
-            document.getElementById('endDate').value = '';
-            document.getElementById('location').value = '';
-            document.getElementById('minTempMin').value = '';
-            document.getElementById('minTempMax').value = '';
-            document.getElementById('maxTempMin').value = '';
-            document.getElementById('maxTempMax').value = '';
-            document.getElementById('rainfallMin').value = '';
-            document.getElementById('rainfallMax').value = '';
-            document.getElementById('humidityMin').value = '';
-            document.getElementById('humidityMax').value = '';
-
+            ['startDate', 'endDate', 'location', 'minTempMin', 'minTempMax', 'maxTempMin', 'maxTempMax', 'rainfallMin', 'rainfallMax', 'humidityMin', 'humidityMax'].forEach(id => {
+                document.getElementById(id).value = '';
+            });
             document.getElementById('resultsContainer').style.display = 'none';
             document.getElementById('plotContainer').style.display = 'none';
             document.getElementById('paginationContainer').innerHTML = '';
@@ -483,7 +482,7 @@
         }
 
         function showLoading() {
-            document.getElementById('loadingContainer').style.display = 'block';
+            document.getElementById('loadingContainer').style.display = 'flex';
             document.getElementById('resultsContainer').style.display = 'none';
         }
 
@@ -494,23 +493,15 @@
         function showMessage(message, type) {
             const container = document.getElementById('messageContainer');
             const messageDiv = document.createElement('div');
-
-            let className = 'success-message';
-            if (type === 'error') className = 'error-message';
-            else if (type === 'info') className = 'success-message';
-
-            messageDiv.className = className;
-            messageDiv.textContent = message;
-
+            messageDiv.className = `message message-${type}`;
+            messageDiv.innerHTML = `<i class="fas fa-${type === 'error' ? 'exclamation-triangle' : type === 'success' ? 'check-circle' : 'info-circle'}"></i> ${message}`;
             container.innerHTML = '';
             container.appendChild(messageDiv);
-
             setTimeout(() => {
                 container.innerHTML = '';
             }, 5000);
         }
 
-        // Handle Enter key in input fields
         document.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 searchData();
