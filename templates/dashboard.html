@@ -202,9 +202,20 @@
                     <button class="btn btn-outline-secondary" onclick="loadRecentData()">
                         <i class="fas fa-clock"></i> Recent 30 Days
                     </button>
-                    <button class="btn btn-outline-secondary" onclick="/upload">
+                    <button class="btn btn-outline-secondary" onclick="document.getElementById('uploadModal').style.display='block'">
                         <i class="fas fa-upload"></i> Upload Data
                     </button>
+                </div>
+
+                <div id="uploadModal">
+                    <div class="modal-content">
+                        <span class="close" onclick="document.getElementById('uploadModal').style.display='none'">&times;</span>
+                        <h3>Upload a File</h3>
+                        <form method="POST" action="/upload" enctype="multipart/form-data">
+                            <input type="file" name="file" required><br><br>
+                            <input type="submit" value="Submit">
+                        </form>
+                    </div>
                 </div>
 
                 <!-- Visualization Section -->
@@ -288,6 +299,11 @@
         document.addEventListener('DOMContentLoaded', function() {
             loadStats();
         });
+
+        window.onclick = function(event) {
+            let modal = document.getElementById('uploadModal')
+            if (event.target == modal) modal.style.display = "none"
+        }
 
         function loadStats() {
             fetch('/stats')
