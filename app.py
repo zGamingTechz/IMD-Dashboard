@@ -524,14 +524,4 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
 
-        excel_file_path = 'weather_data.xlsx'
-        csv_file_path = 'weather_data.csv'
-
-        if os.path.exists(excel_file_path):
-            load_excel_data(excel_file_path)
-        elif os.path.exists(csv_file_path):
-            load_excel_data(csv_file_path)
-        else:
-            print("No Excel or CSV file found. Place 'weather_data.xlsx' or 'weather_data.csv' in the same directory.")
-
     app.run(debug=True)
