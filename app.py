@@ -515,6 +515,7 @@ def upload_data():
         custom_path = os.path.join('new data', filename)
         os.makedirs(os.path.dirname(custom_path), exist_ok=True)
         file.save(custom_path)
+        load_excel_data(custom_path)
         return redirect("/")
     return redirect("/")
 
