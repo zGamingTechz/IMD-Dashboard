@@ -368,6 +368,18 @@ body {
     background: linear-gradient(135deg, #4299e1, #3182ce);
 }
 
+.stat-card:nth-child(5) .stat-icon {
+    background: linear-gradient(135deg, #4299e1, #3182ce);
+}
+
+.stat-card:nth-child(6) .stat-icon {
+    background: linear-gradient(135deg, #FFD95A, #FFB085);
+}
+
+.stat-card:nth-child(7) .stat-icon {
+    background: linear-gradient(135deg, #FF6B00, #DAA520);
+}
+
 .stat-info {
     display: flex;
     flex-direction: column;
