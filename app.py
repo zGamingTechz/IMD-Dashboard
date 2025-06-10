@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, send_file
+from flask import Flask, render_template, request, jsonify, send_file, redirect
 from flask_sqlalchemy import SQLAlchemy
 import pandas as pd
 import os
@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from io import BytesIO
 import base64
+from werkzeug.utils import secure_filename
 
 
 app = Flask(__name__)
@@ -492,9 +493,16 @@ def generate_plot():
         return jsonify({'success': False, 'error': str(e)})
 
 
-@app.route('/upload')
+@app.route('/upload', methods=['POST'])
 def upload_data():
-    pass
+    file = request.files.get('file')
+    if file:
+        filename = secure_filename("new_data")
+        custom_path = os.path.join('new data', filename)
+        os.makedirs(os.path.dirname(custom_path), exist_ok=True)
+        file.save(custom_path)
+        return redirect("/")
+    return redirect("/")
 
 
 if __name__ == '__main__':
