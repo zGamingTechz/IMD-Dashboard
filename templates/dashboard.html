@@ -165,6 +165,15 @@
                             <div class="stat-label">Avg Min Temp</div>
                         </div>
                     </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-water"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="avgRainfall">-</div>
+                            <div class="stat-label">Avg Rainfall</div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Quick Actions -->
@@ -271,6 +280,7 @@
                     document.getElementById('locationsCount').textContent = data.locations || 0;
                     document.getElementById('avgMaxTemp').textContent = data.avg_temps.max ? data.avg_temps.max + '°C' : 'N/A';
                     document.getElementById('avgMinTemp').textContent = data.avg_temps.min ? data.avg_temps.min + '°C' : 'N/A';
+                    document.getElementById('avgRainfall').textContent = data.avg_rainfall ? data.avg_rainfall + 'mm' : 'N/A';
                 })
                 .catch(error => {
                     console.error('Error loading stats:', error);
