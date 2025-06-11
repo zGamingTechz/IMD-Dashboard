@@ -575,7 +575,7 @@ def upload_data():
 def take_backup():
     print("h")
     try:
-        backup_dir = os.path.join('backup', 'backups')
+        backup_dir = os.path.join('backup')
         os.makedirs(backup_dir, exist_ok=True)
 
         # Generate timestamp for backup filename
@@ -583,7 +583,7 @@ def take_backup():
         backup_filename = f'weather_data_backup_{timestamp}.db'
         backup_path = os.path.join(backup_dir, backup_filename)
 
-        db_path = 'weather_data.db'
+        db_path = 'instance/weather_data.db'
 
         if os.path.exists(db_path):
             shutil.copy2(db_path, backup_path)
