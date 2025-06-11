@@ -471,6 +471,56 @@ def generate_plot():
             ax.set_xlabel('Max Temperature (°C)', fontsize=12)
             ax.set_ylabel('Rainfall (mm)', fontsize=12)
 
+        elif plot_type == 'extreme_values':
+            # Collect all extreme values in one chart
+            extremes_data = {}
+
+            # Temperature extremes
+            max_temps = [record.max_temp for record in results if record.max_temp is not None]
+            min_temps = [record.min_temp for record in results if record.min_temp is not None]
+            if max_temps and min_temps:
+                extremes_data['Highest Temp'] = max(max_temps)
+                extremes_data['Lowest Temp'] = min(min_temps)
+
+            # Rainfall extremes
+            rainfall_values = [record.rainfall for record in results if
+                               record.rainfall is not None and record.rainfall > 0]
+            if rainfall_values:
+                extremes_data['Max Rainfall'] = max(rainfall_values)
+
+            # Humidity extremes
+            humidity_morning = [record.humidity_morning for record in results if record.humidity_morning is not None]
+            humidity_evening = [record.humidity_evening for record in results if record.humidity_evening is not None]
+            if humidity_morning and humidity_evening:
+                all_humidity = humidity_morning + humidity_evening
+                extremes_data['Max Humidity'] = max(all_humidity)
+                extremes_data['Min Humidity'] = min(all_humidity)
+
+            if extremes_data:
+                fig, ax = plt.subplots(figsize=(12, 8))
+
+                labels = list(extremes_data.keys())
+                values = list(extremes_data.values())
+                colors = ['red', 'blue', 'darkblue', 'green', 'lightgreen'][:len(labels)]
+
+                bars = ax.barh(labels, values, color=colors, alpha=0.8)
+
+                for i, (bar, value) in enumerate(zip(bars, values)):
+                    width = bar.get_width()
+                    ax.text(width + max(values) * 0.01, bar.get_y() + bar.get_height() / 2,
+                            f'{value:.1f}', ha='left', va='center', fontweight='bold')
+
+                ax.set_title('Weather Parameter Extreme Values', fontsize=16, fontweight='bold')
+                ax.set_xlabel('Values')
+                ax.grid(True, alpha=0.3, axis='x')
+                plt.tight_layout()
+            else:
+                fig, ax = plt.subplots(figsize=(10, 6))
+                ax.text(0.5, 0.5, 'No data available for extreme values analysis',
+                        ha='center', va='center', fontsize=14, transform=ax.transAxes)
+                ax.set_title('Extreme Values Analysis', fontsize=16, fontweight='bold')
+                ax.axis('off')
+
         # Format dates on x-axis
         if plot_type != 'temp_rainfall_correlation':
             ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
