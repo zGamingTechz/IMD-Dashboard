@@ -202,7 +202,7 @@
                     <button class="btn btn-outline-secondary" onclick="loadRecentData()">
                         <i class="fas fa-clock"></i> Recent 30 Days
                     </button>
-                    <button class="btn btn-outline-secondary" onclick="/backup">
+                    <button class="btn btn-outline-secondary" onclick="takeBackup()">
                         <i class="fas fa-cloud-upload-alt"></i> Take Backup
                     </button>
                     <button class="btn btn-outline-secondary" onclick="document.getElementById('uploadModal').style.display='block'">
@@ -590,6 +590,58 @@
                 console.error('Download error:', error);
                 showMessage('Error downloading plot: ' + error.message, 'error');
             }
+        }
+
+        function takeBackup() {
+            showMessage('Preparing backup...', 'info');
+
+            fetch('/backup', {
+                method: 'GET'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(errorData => {
+                        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+                    }).catch(() => {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    });
+                }
+
+                // Get filename from Content-Disposition header
+                const contentDisposition = response.headers.get('Content-Disposition');
+                let filename = 'weather_data_backup.db';
+                if (contentDisposition && contentDisposition.includes('filename=')) {
+                    filename = contentDisposition.split('filename=')[1].replace(/"/g, '');
+                }
+
+                return response.blob().then(blob => ({ blob, filename }));
+            })
+            .then(({ blob, filename }) => {
+                if (blob.size === 0) {
+                    throw new Error('Backup file is empty');
+                }
+
+                // Create download link
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+
+                // Cleanup
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                }, 100);
+
+                showMessage('Backup downloaded successfully!', 'success');
+            })
+            .catch(error => {
+                console.error('Backup error:', error);
+                showMessage('Backup error: ' + error.message, 'error');
+            });
         }
     </script>
 </body>

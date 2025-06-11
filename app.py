@@ -11,6 +11,7 @@ import matplotlib.dates as mdates
 from io import BytesIO
 import base64
 from werkzeug.utils import secure_filename
+import shutil
 
 
 app = Flask(__name__)
@@ -569,6 +570,35 @@ def upload_data():
         return redirect("/")
     return redirect("/")
 
+
+@app.route('/backup')
+def take_backup():
+    print("h")
+    try:
+        backup_dir = os.path.join('backup', 'backups')
+        os.makedirs(backup_dir, exist_ok=True)
+
+        # Generate timestamp for backup filename
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        backup_filename = f'weather_data_backup_{timestamp}.db'
+        backup_path = os.path.join(backup_dir, backup_filename)
+
+        db_path = 'weather_data.db'
+
+        if os.path.exists(db_path):
+            shutil.copy2(db_path, backup_path)
+
+            return send_file(
+                backup_path,
+                mimetype='application/octet-stream',
+                as_attachment=True,
+                download_name=backup_filename
+            )
+        else:
+            return jsonify({'success': False, 'error': 'Database file not found'}), 404
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': f'Backup failed: {str(e)}'}), 500
 
 if __name__ == '__main__':
     with app.app_context():
