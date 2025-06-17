@@ -12,6 +12,7 @@ from io import BytesIO
 import base64
 from werkzeug.utils import secure_filename
 import shutil
+import re
 
 
 app = Flask(__name__)
@@ -145,81 +146,186 @@ def load_excel_data(file_path):
     try:
         df = pd.read_csv(file_path) if file_path.endswith('.csv') else pd.read_excel(file_path)
 
+        # Column mappings
         column_mapping = {
-            'DATE': 'date',
-            'STATION LEVEL PRESSURE 0830 IST': 'station_pressure_morning',
-            'STATION LEVEL PRESSURE1730 IST': 'station_pressure_evening',
-            'MEAN SEA LEVEL PRESSURE0830 IST': 'sea_level_pressure_morning',
-            'MEAN SEA LEVEL PRESSURE1730 IST': 'sea_level_pressure_evening',
-            'MAX TEMP': 'max_temp',
-            'MIN TEMP': 'min_temp',
-            'VAPOUR PRESSURE0830 IST': 'vapour_pressure_morning',
-            'VAPOUR PRESSURE1730 IST': 'vapour_pressure_evening',
-            'RELATIVE HUMIDITY ( %)0830 IST': 'humidity_morning',
-            'RELATIVE HUMIDITY ( %)1730 IST': 'humidity_evening',
-            'RAIN FALL    (IN MM)': 'rainfall',
-            'LOCATION': 'location'
+            'INDEX': 'station_index',
+            'YEAR': 'year',
+            'MN': 'month',
+            'HR': 'hour',
+            'DT': 'day',
+            '...SLP': 'station_level_pressure',
+            '..MSLP': 'mean_sea_level_pressure',
+            '..DBT': 'dry_bulb_temp',
+            '..WBT': 'wet_bulb_temp',
+            '..DPT': 'dew_point_temp',
+            '.RH': 'relative_humidity',
+            '..VP': 'vapor_pressure',
+            'DD': 'wind_direction',
+            'FFF': 'wind_speed',
+            'AW': 'wind_gust',
+            'VV': 'visibility',
+            'C': 'total_cloud_cover',
+            'l A': 'low_cloud_amount',
+            'Cm': 'medium_cloud_amount',
+            'A': 'cloud_type_low',
+            'Ch': 'high_cloud_amount',
+            'A.1': 'cloud_type_high',
+            'Dl': 'daily_min_temp',
+            'Dm': 'daily_mean_temp',
+            'Dh': 'daily_max_temp'
         }
 
-        df.rename(columns=column_mapping, inplace=True)
+        existing_columns = {k: v for k, v in column_mapping.items() if k in df.columns}
+        df.rename(columns=existing_columns, inplace=True)
+
+        # Handling the corrupted column
+        corrupted_col_name = None
+        for col in df.columns:
+            if 'TC h c a Ht' in str(col) or len(str(col)) > 50:
+                corrupted_col_name = col
+                break
 
         imported = 0
         skipped = 0
+        errors = 0
 
         for i, row in df.iterrows():
             try:
-                if pd.isna(row.get('date')):
-                    continue
-
-                parsed_date = pd.to_datetime(row['date'], errors='coerce')
-                if pd.isna(parsed_date):
-                    print(f"Skipping row {i}: Invalid date '{row['date']}'")
-                    continue
-
-                new_data = {
-                    'date': parsed_date.date(),
-                    'station_pressure_morning': safe_float(row.get('station_pressure_morning')),
-                    'station_pressure_evening': safe_float(row.get('station_pressure_evening')),
-                    'sea_level_pressure_morning': safe_float(row.get('sea_level_pressure_morning')),
-                    'sea_level_pressure_evening': safe_float(row.get('sea_level_pressure_evening')),
-                    'max_temp': safe_float(row.get('max_temp')),
-                    'min_temp': safe_float(row.get('min_temp')),
-                    'vapour_pressure_morning': safe_float(row.get('vapour_pressure_morning')),
-                    'vapour_pressure_evening': safe_float(row.get('vapour_pressure_evening')),
-                    'humidity_morning': safe_float(row.get('humidity_morning')),
-                    'humidity_evening': safe_float(row.get('humidity_evening')),
-                    'rainfall': safe_float(row.get('rainfall')),
-                    'location': str(row.get('location', '')).strip()
-                }
-
-                # Check if an exact same record exists
-                exists = WeatherData.query.filter_by(**new_data).first()
-                if exists:
+                # Skipping rows with missing essential data
+                if pd.isna(row.get('year')) or pd.isna(row.get('month')) or pd.isna(row.get('day')):
                     skipped += 1
                     continue
 
-                db.session.add(WeatherData(**new_data))
+                # Parsing the corrupted column for rainfall and other data
+                rainfall_val = None
+                evaporation_val = None
+                sunshine_val = None
+
+                if corrupted_col_name and not pd.isna(row.get(corrupted_col_name)):
+                    corrupted_data = str(row[corrupted_col_name])
+                    rainfall_match = re.search(r'(\d{3}\.\d)', corrupted_data)
+                    if rainfall_match:
+                        rainfall_val = safe_float(rainfall_match.group(1))
+
+                # Creating new weather data record
+                new_data = {
+                    'station_index': safe_string(row.get('station_index')),
+                    'year': safe_int(row.get('year')),
+                    'month': safe_int(row.get('month')),
+                    'day': safe_int(row.get('day')),
+                    'hour': safe_int(row.get('hour')),
+
+                    # Pressure data
+                    'station_level_pressure': safe_float(row.get('station_level_pressure')),
+                    'mean_sea_level_pressure': safe_float(row.get('mean_sea_level_pressure')),
+
+                    # Temperature data
+                    'dry_bulb_temp': safe_float(row.get('dry_bulb_temp')),
+                    'wet_bulb_temp': safe_float(row.get('wet_bulb_temp')),
+                    'dew_point_temp': safe_float(row.get('dew_point_temp')),
+                    'daily_min_temp': safe_float(row.get('daily_min_temp')),
+                    'daily_mean_temp': safe_float(row.get('daily_mean_temp')),
+                    'daily_max_temp': safe_float(row.get('daily_max_temp')),
+
+                    # Humidity and moisture
+                    'relative_humidity': safe_float(row.get('relative_humidity')),
+                    'vapor_pressure': safe_float(row.get('vapor_pressure')),
+
+                    # Wind data
+                    'wind_direction': safe_float(row.get('wind_direction')),
+                    'wind_speed': safe_float(row.get('wind_speed')),
+                    'wind_gust': safe_float(row.get('wind_gust')),
+
+                    # Visibility
+                    'visibility': safe_float(row.get('visibility')),
+
+                    # Cloud cover
+                    'total_cloud_cover': safe_float(row.get('total_cloud_cover')),
+                    'low_cloud_amount': safe_float(row.get('low_cloud_amount')),
+                    'medium_cloud_amount': safe_float(row.get('medium_cloud_amount')),
+                    'high_cloud_amount': safe_float(row.get('high_cloud_amount')),
+                    'cloud_type_low': safe_float(row.get('cloud_type_low')),
+                    'cloud_type_high': safe_float(row.get('cloud_type_high')),
+
+                    # Weather phenomena
+                    'rainfall': rainfall_val,
+                    'evaporation': evaporation_val,
+                    'sunshine_hours': sunshine_val
+                }
+
+                # Checking if record with same station, year, month, day, hour exists
+                existing = WeatherData.query.filter_by(
+                    station_index=new_data['station_index'],
+                    year=new_data['year'],
+                    month=new_data['month'],
+                    day=new_data['day'],
+                    hour=new_data['hour']
+                ).first()
+
+                if existing:
+                    skipped += 1
+                    continue
+
+                weather_record = WeatherData(**new_data)
+                db.session.add(weather_record)
                 imported += 1
+
+                # Committing in batches of 100 for better performance
+                if imported % 100 == 0:
+                    db.session.commit()
+                    print(f"Imported {imported} records so far...")
 
             except Exception as row_err:
                 print(f"Row {i} failed to import: {row_err}")
+                errors += 1
                 continue
 
+        # Final commit
         db.session.commit()
-        print(f"Import complete: {imported} added, {skipped} skipped.")
+        print(f"Import complete: {imported} imported, {skipped} skipped, {errors} errors.")
         return True
 
     except Exception as e:
         print(f"Error loading data: {e}")
+        db.session.rollback()
         return False
 
 
 def safe_float(value):
+    """Safely convert value to float, return None if invalid"""
     if pd.isna(value) or value == '' or value is None:
         return None
     try:
+        if isinstance(value, str):
+            value = value.strip()
+            if value == '':
+                return None
         return float(value)
     except (ValueError, TypeError):
+        return None
+
+
+def safe_int(value):
+    """Safely convert value to integer, return None if invalid"""
+    if pd.isna(value) or value == '' or value is None:
+        return None
+    try:
+        if isinstance(value, str):
+            value = value.strip()
+            if value == '':
+                return None
+        return int(float(value))
+    except (ValueError, TypeError):
+        return None
+
+
+def safe_string(value):
+    """Safely convert value to string, return None if invalid"""
+    if pd.isna(value) or value is None:
+        return None
+    try:
+        return str(value).strip()
+    except:
         return None
 
 
