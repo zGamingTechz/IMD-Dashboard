@@ -570,13 +570,12 @@ def upload_data():
 
 @app.route('/backup')
 def take_backup():
-    print("h")
     try:
         backup_dir = os.path.join('backup')
         os.makedirs(backup_dir, exist_ok=True)
 
         # Generate timestamp for backup filename
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        timestamp = datetime.now().strftime('Y%Y_M%m_D%d_Hour%H')
         backup_filename = f'weather_data_backup_{timestamp}.db'
         backup_path = os.path.join(backup_dir, backup_filename)
 
