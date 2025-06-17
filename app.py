@@ -27,6 +27,29 @@ ALLOWED_EXTENSIONS = {'.xls', '.xlsx', '.csv'}
 # Create uploads folder if it doesn't exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
+stations = {
+    42343: 'Ajmer',
+    42447: 'Bhilwara',
+    42346: 'Vanasthali',
+    42255: 'Alwar',
+    42348: 'Jaipur',
+    42174: 'Pilani',
+    42249: 'Sikar',
+    42452: 'Kota',
+    42546: 'Chittorgarh',
+    42542: 'Dabok',
+    42435: 'Barmer',
+    42441: "E.R. Road (Pali)",
+    42328: "Jaisalmer",
+    42339: "Jodhpur",
+    42540: 'Mt. Abu',
+    42237: 'Phalodi',
+    42165: 'Bikaner',
+    42170: 'Churu',
+    42123: 'S. Ganganagar',
+    'Will add more': 0
+}
+
 
 # Database Model
 class WeatherData(db.Model):
@@ -34,6 +57,7 @@ class WeatherData(db.Model):
 
     # Identification and Time columns
     station_index = db.Column(db.String(20), index=True)  # INDEX column
+    location = db.Column(db.String(20), index=True) # Locations (from index)
     year = db.Column(db.Integer, nullable=False, index=True)  # YEAR
     month = db.Column(db.Integer, nullable=False, index=True)  # MN
     day = db.Column(db.Integer, nullable=False)  # DT
@@ -93,6 +117,7 @@ class WeatherData(db.Model):
     def to_dict(self):
         return {
             'id': self.id,
+            'location': self.location,
             'station_index': self.station_index,
             'year': self.year,
             'month': self.month,
@@ -210,6 +235,7 @@ def load_excel_data(file_path):
                 # Creating new weather data record
                 new_data = {
                     'station_index': safe_string(row.get('station_index')),
+                    'location': stations.get(safe_string(row.get('station_index')), 'Unknown'),
                     'year': safe_int(row.get('year')),
                     'month': safe_int(row.get('month')),
                     'day': safe_int(row.get('day')),
