@@ -561,8 +561,7 @@ def upload_data():
             return "Only Excel files are allowed", 400
 
         filename = secure_filename("new_data" + ext)
-        custom_path = os.path.join('new data', filename)
-        os.makedirs(os.path.dirname(custom_path), exist_ok=True)
+        custom_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(custom_path)
         load_excel_data(custom_path)
         return redirect("/")
