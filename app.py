@@ -297,18 +297,16 @@ def download_data():
 
         df = pd.DataFrame(df_data)
 
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='Weather Data')
+        output.seek(0)
+
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         filename = f"weather_data_{timestamp[0:4]}_{timestamp[4:6]}_{timestamp[6:8]}.xlsx"
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-
-        with pd.ExcelWriter(filepath, engine='openpyxl') as writer:
-            df.to_excel(writer, index=False, sheet_name='Weather Data')
-
-        if not os.path.exists(filepath) or os.path.getsize(filepath) == 0:
-            raise Exception("Failed to create Excel file or file is empty")
 
         return send_file(
-            filepath,
+            output,
             mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             as_attachment=True,
             download_name=filename
