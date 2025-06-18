@@ -394,13 +394,13 @@ def query_data():
 
         # Temperature filters
         if data.get('min_temp_min'):
-            query = query.filter(WeatherData.min_temp >= float(data['min_temp_min']))
+            query = query.filter(WeatherData.daily_min_temp >= float(data['min_temp_min']))
         if data.get('min_temp_max'):
-            query = query.filter(WeatherData.min_temp <= float(data['min_temp_max']))
+            query = query.filter(WeatherData.daily_min_temp <= float(data['min_temp_max']))
         if data.get('max_temp_min'):
-            query = query.filter(WeatherData.max_temp >= float(data['max_temp_min']))
+            query = query.filter(WeatherData.daily_max_temp >= float(data['max_temp_min']))
         if data.get('max_temp_max'):
-            query = query.filter(WeatherData.max_temp <= float(data['max_temp_max']))
+            query = query.filter(WeatherData.daily_max_temp <= float(data['max_temp_max']))
 
         # Rainfall filter
         if data.get('rainfall_min'):
@@ -410,19 +410,9 @@ def query_data():
 
         # Humidity filters
         if data.get('humidity_min'):
-            query = query.filter(
-                db.or_(
-                    WeatherData.humidity_morning >= float(data['humidity_min']),
-                    WeatherData.humidity_evening >= float(data['humidity_min'])
-                )
-            )
+            query = query.filter(WeatherData.relative_humidity >= float(data['humidity_min']))
         if data.get('humidity_max'):
-            query = query.filter(
-                db.or_(
-                    WeatherData.humidity_morning <= float(data['humidity_max']),
-                    WeatherData.humidity_evening <= float(data['humidity_max'])
-                )
-            )
+            query = query.filter(WeatherData.relative_humidity <= float(data['humidity_max']))
 
         page = data.get('page', 1)
         per_page = data.get('per_page', 100)
@@ -448,134 +438,7 @@ def download_data():
         data = request.json
         query = WeatherData.query
 
-        # Fetch data from DB
-        if data.get('start_date'):
-            start_date = datetime.strptime(data['start_date'], '%Y-%m-%d').date()
-            query = query.filter(WeatherData.date >= start_date)
-        if data.get('end_date'):
-            end_date = datetime.strptime(data['end_date'], '%Y-%m-%d').date()
-            query = query.filter(WeatherData.date <= end_date)
-        if data.get('location'):
-            query = query.filter(WeatherData.location == data['location'])
-        if data.get('min_temp_min'):
-            query = query.filter(WeatherData.min_temp >= float(data['min_temp_min']))
-        if data.get('min_temp_max'):
-            query = query.filter(WeatherData.min_temp <= float(data['min_temp_max']))
-        if data.get('max_temp_min'):
-            query = query.filter(WeatherData.max_temp >= float(data['max_temp_min']))
-        if data.get('max_temp_max'):
-            query = query.filter(WeatherData.max_temp <= float(data['max_temp_max']))
-        if data.get('rainfall_min'):
-            query = query.filter(WeatherData.rainfall >= float(data['rainfall_min']))
-        if data.get('rainfall_max'):
-            query = query.filter(WeatherData.rainfall <= float(data['rainfall_max']))
-        if data.get('humidity_min'):
-            query = query.filter(
-                db.or_(
-                    WeatherData.humidity_morning >= float(data['humidity_min']),
-                    WeatherData.humidity_evening >= float(data['humidity_min'])
-                )
-            )
-        if data.get('humidity_max'):
-            query = query.filter(
-                db.or_(
-                    WeatherData.humidity_morning <= float(data['humidity_max']),
-                    WeatherData.humidity_evening <= float(data['humidity_max'])
-                )
-            )
-
-        results = query.order_by(WeatherData.date.desc()).all()
-
-        # New DF (for download)
-        df_data = []
-        for record in results:
-            df_data.append({
-                'Date': record.date.strftime('%Y-%m-%d'),
-                'Station Pressure (Morning)': record.station_pressure_morning,
-                'Station Pressure (Evening)': record.station_pressure_evening,
-                'Sea Level Pressure (Morning)': record.sea_level_pressure_morning,
-                'Sea Level Pressure (Evening)': record.sea_level_pressure_evening,
-                'Max Temperature': record.max_temp,
-                'Min Temperature': record.min_temp,
-                'Vapour Pressure (Morning)': record.vapour_pressure_morning,
-                'Vapour Pressure (Evening)': record.vapour_pressure_evening,
-                'Humidity (Morning)': record.humidity_morning,
-                'Humidity (Evening)': record.humidity_evening,
-                'Rainfall (mm)': record.rainfall,
-                'Location': record.location
-            })
-
-        df = pd.DataFrame(df_data)
-
-        output = BytesIO()
-        with pd.ExcelWriter(output, engine='openpyxl') as writer:
-            df.to_excel(writer, index=False, sheet_name='Weather Data')
-        output.seek(0)
-
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        filename = f"weather_data_{timestamp[0:4]}_{timestamp[4:6]}_{timestamp[6:8]}.xlsx"
-
-        return send_file(
-            output,
-            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            as_attachment=True,
-            download_name=filename
-        )
-
-    except Exception as e:
-        print(f"Download error: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-
-@app.route('/stats')
-def get_stats():
-        total_records = WeatherData.query.count()
-        locations_count = db.session.query(WeatherData.location.distinct()).count()
-
-        date_range = db.session.query(
-            db.func.min(WeatherData.date),
-            db.func.max(WeatherData.date)
-        ).first()
-
-        avg_temp = db.session.query(
-            db.func.avg(WeatherData.daily_max_temp),
-            db.func.avg(WeatherData.daily_min_temp)
-        ).first()
-
-        avg_rainfall = db.session.query(
-            db.func.avg(WeatherData.rainfall)
-        ).first()
-
-        avg_humidity = db.session.query(
-            db.func.avg(WeatherData.relative_humidity)
-        ).first()
-
-        return jsonify({
-            'total_records': total_records,
-            'locations': locations_count,
-            'date_range': {
-                'start': date_range[0].strftime('%Y-%m-%d') if date_range[0] else None,
-                'end': date_range[1].strftime('%Y-%m-%d') if date_range[1] else None
-            },
-            'avg_temps': {
-                'max': round(avg_temp[0], 2) if avg_temp[0] else None,
-                'min': round(avg_temp[1], 2) if avg_temp[1] else None
-            },
-            'avg_rainfall': round(avg_rainfall[0], 2),
-            'avg_humidity': {
-                'morning': round(avg_humidity[0] if avg_humidity else None)
-            }
-        })
-
-
-@app.route('/plot', methods=['POST'])
-def generate_plot():
-
-        data = request.json
-        plot_type = data.get('plot_type', 'temperature_trend')
-
-        query = WeatherData.query
-
+        # Apply filters
         if data.get('start_date'):
             start_date = datetime.strptime(data['start_date'], '%Y-%m-%d').date()
             query = query.filter(WeatherData.date >= start_date)
@@ -597,19 +460,156 @@ def generate_plot():
         if data.get('rainfall_max'):
             query = query.filter(WeatherData.rainfall <= float(data['rainfall_max']))
         if data.get('humidity_min'):
-            query = query.filter(
-                db.or_(
-                    WeatherData.humidity_morning >= float(data['humidity_min']),
-                    WeatherData.humidity_evening >= float(data['humidity_min'])
-                )
-            )
+            query = query.filter(WeatherData.relative_humidity >= float(data['humidity_min']))
         if data.get('humidity_max'):
-            query = query.filter(
-                db.or_(
-                    WeatherData.humidity_morning <= float(data['humidity_max']),
-                    WeatherData.humidity_evening <= float(data['humidity_max'])
-                )
-            )
+            query = query.filter(WeatherData.relative_humidity <= float(data['humidity_max']))
+
+        results = query.order_by(WeatherData.date.desc()).all()
+
+        # Create DataFrame for download
+        df_data = []
+        for record in results:
+            df_data.append({
+                'Date': record.date.strftime('%Y-%m-%d') if record.date else '',
+                'Location': record.location,
+                'Station Index': record.station_index,
+                'Year': record.year,
+                'Month': record.month,
+                'Day': record.day,
+                'Hour': record.hour,
+                'Station Level Pressure': record.station_level_pressure,
+                'Mean Sea Level Pressure': record.mean_sea_level_pressure,
+                'Dry Bulb Temperature': record.dry_bulb_temp,
+                'Wet Bulb Temperature': record.wet_bulb_temp,
+                'Dew Point Temperature': record.dew_point_temp,
+                'Daily Min Temperature': record.daily_min_temp,
+                'Daily Mean Temperature': record.daily_mean_temp,
+                'Daily Max Temperature': record.daily_max_temp,
+                'Relative Humidity': record.relative_humidity,
+                'Vapor Pressure': record.vapor_pressure,
+                'Wind Direction': record.wind_direction,
+                'Wind Speed': record.wind_speed,
+                'Wind Gust': record.wind_gust,
+                'Visibility': record.visibility,
+                'Total Cloud Cover': record.total_cloud_cover,
+                'Low Cloud Amount': record.low_cloud_amount,
+                'Medium Cloud Amount': record.medium_cloud_amount,
+                'High Cloud Amount': record.high_cloud_amount,
+                'Cloud Type Low': record.cloud_type_low,
+                'Cloud Type High': record.cloud_type_high,
+                'Rainfall': record.rainfall,
+                'Evaporation': record.evaporation,
+                'Sunshine Hours': record.sunshine_hours
+            })
+
+        df = pd.DataFrame(df_data)
+
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='Weather Data')
+        output.seek(0)
+
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"weather_data_{timestamp}.xlsx"
+
+        return send_file(
+            output,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=filename
+        )
+
+    except Exception as e:
+        print(f"Download error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/stats')
+def get_stats():
+    try:
+        total_records = WeatherData.query.count()
+        locations_count = db.session.query(WeatherData.location.distinct()).count()
+
+        date_range = db.session.query(
+            db.func.min(WeatherData.date),
+            db.func.max(WeatherData.date)
+        ).first()
+
+        avg_temp = db.session.query(
+            db.func.avg(WeatherData.daily_max_temp),
+            db.func.avg(WeatherData.daily_min_temp),
+            db.func.avg(WeatherData.daily_mean_temp)
+        ).first()
+
+        avg_rainfall = db.session.query(
+            db.func.avg(WeatherData.rainfall)
+        ).first()
+
+        avg_humidity = db.session.query(
+            db.func.avg(WeatherData.relative_humidity)
+        ).first()
+
+        avg_pressure = db.session.query(
+            db.func.avg(WeatherData.station_level_pressure),
+            db.func.avg(WeatherData.mean_sea_level_pressure)
+        ).first()
+
+        return jsonify({
+            'total_records': total_records,
+            'locations': locations_count,
+            'date_range': {
+                'start': date_range[0].strftime('%Y-%m-%d') if date_range[0] else None,
+                'end': date_range[1].strftime('%Y-%m-%d') if date_range[1] else None
+            },
+            'avg_temps': {
+                'max': round(avg_temp[0], 2) if avg_temp[0] else None,
+                'min': round(avg_temp[1], 2) if avg_temp[1] else None,
+                'mean': round(avg_temp[2], 2) if avg_temp[2] else None
+            },
+            'avg_rainfall': round(avg_rainfall[0], 2) if avg_rainfall[0] else None,
+            'avg_humidity': round(avg_humidity[0], 2) if avg_humidity[0] else None,
+            'avg_pressure': {
+                'station_level': round(avg_pressure[0], 2) if avg_pressure[0] else None,
+                'sea_level': round(avg_pressure[1], 2) if avg_pressure[1] else None
+            }
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/plot', methods=['POST'])
+def generate_plot():
+    try:
+        data = request.json
+        plot_type = data.get('plot_type', 'temperature_trend')
+
+        query = WeatherData.query
+
+        # Apply filters
+        if data.get('start_date'):
+            start_date = datetime.strptime(data['start_date'], '%Y-%m-%d').date()
+            query = query.filter(WeatherData.date >= start_date)
+        if data.get('end_date'):
+            end_date = datetime.strptime(data['end_date'], '%Y-%m-%d').date()
+            query = query.filter(WeatherData.date <= end_date)
+        if data.get('location'):
+            query = query.filter(WeatherData.location == data['location'])
+        if data.get('min_temp_min'):
+            query = query.filter(WeatherData.daily_min_temp >= float(data['min_temp_min']))
+        if data.get('min_temp_max'):
+            query = query.filter(WeatherData.daily_min_temp <= float(data['min_temp_max']))
+        if data.get('max_temp_min'):
+            query = query.filter(WeatherData.daily_max_temp >= float(data['max_temp_min']))
+        if data.get('max_temp_max'):
+            query = query.filter(WeatherData.daily_max_temp <= float(data['max_temp_max']))
+        if data.get('rainfall_min'):
+            query = query.filter(WeatherData.rainfall >= float(data['rainfall_min']))
+        if data.get('rainfall_max'):
+            query = query.filter(WeatherData.rainfall <= float(data['rainfall_max']))
+        if data.get('humidity_min'):
+            query = query.filter(WeatherData.relative_humidity >= float(data['humidity_min']))
+        if data.get('humidity_max'):
+            query = query.filter(WeatherData.relative_humidity <= float(data['humidity_max']))
 
         results = query.order_by(WeatherData.date.asc()).all()
 
@@ -625,11 +625,14 @@ def generate_plot():
         if plot_type == 'temperature_trend':
             max_temps = [record.daily_max_temp for record in results if record.daily_max_temp is not None]
             min_temps = [record.daily_min_temp for record in results if record.daily_min_temp is not None]
+            mean_temps = [record.daily_mean_temp for record in results if record.daily_mean_temp is not None]
             valid_dates_max = [record.date for record in results if record.daily_max_temp is not None]
             valid_dates_min = [record.date for record in results if record.daily_min_temp is not None]
+            valid_dates_mean = [record.date for record in results if record.daily_mean_temp is not None]
 
             ax.plot(valid_dates_max, max_temps, 'r-', label='Max Temperature', linewidth=2)
             ax.plot(valid_dates_min, min_temps, 'b-', label='Min Temperature', linewidth=2)
+            ax.plot(valid_dates_mean, mean_temps, 'g-', label='Mean Temperature', linewidth=2)
             ax.set_title('Temperature Trend Over Time', fontsize=16, fontweight='bold')
             ax.set_ylabel('Temperature (°C)', fontsize=12)
 
@@ -640,48 +643,53 @@ def generate_plot():
             ax.set_ylabel('Rainfall (mm)', fontsize=12)
 
         elif plot_type == 'humidity_comparison':
-            morning_humidity = [record.humidity_morning for record in results if record.humidity_morning is not None]
-            evening_humidity = [record.humidity_evening for record in results if record.humidity_evening is not None]
-            valid_dates_morning = [record.date for record in results if record.humidity_morning is not None]
-            valid_dates_evening = [record.date for record in results if record.humidity_evening is not None]
+            humidity = [record.relative_humidity for record in results if record.relative_humidity is not None]
+            valid_dates = [record.date for record in results if record.relative_humidity is not None]
 
-            ax.plot(valid_dates_morning, morning_humidity, 'g-', label='Morning Humidity', linewidth=2)
-            ax.plot(valid_dates_evening, evening_humidity, 'orange', label='Evening Humidity', linewidth=2)
-            ax.set_title('Humidity Comparison (Morning vs Evening)', fontsize=16, fontweight='bold')
+            ax.plot(valid_dates, humidity, 'g-', label='Relative Humidity', linewidth=2)
+            ax.set_title('Humidity Over Time', fontsize=16, fontweight='bold')
             ax.set_ylabel('Humidity (%)', fontsize=12)
 
         elif plot_type == 'pressure_analysis':
-            morning_pressure = [record.station_pressure_morning for record in results if
-                                record.station_pressure_morning is not None]
-            evening_pressure = [record.station_pressure_evening for record in results if
-                                record.station_pressure_evening is not None]
-            valid_dates_morning = [record.date for record in results if record.station_pressure_morning is not None]
-            valid_dates_evening = [record.date for record in results if record.station_pressure_evening is not None]
+            station_pressure = [record.station_level_pressure for record in results if
+                                record.station_level_pressure is not None]
+            sea_level_pressure = [record.mean_sea_level_pressure for record in results if
+                                  record.mean_sea_level_pressure is not None]
+            valid_dates_station = [record.date for record in results if record.station_level_pressure is not None]
+            valid_dates_sea = [record.date for record in results if record.mean_sea_level_pressure is not None]
 
-            ax.plot(valid_dates_morning, morning_pressure, 'purple', label='Morning Pressure', linewidth=2)
-            ax.plot(valid_dates_evening, evening_pressure, 'brown', label='Evening Pressure', linewidth=2)
-            ax.set_title('Station Pressure Analysis', fontsize=16, fontweight='bold')
+            ax.plot(valid_dates_station, station_pressure, 'purple', label='Station Level Pressure', linewidth=2)
+            ax.plot(valid_dates_sea, sea_level_pressure, 'brown', label='Sea Level Pressure', linewidth=2)
+            ax.set_title('Pressure Analysis', fontsize=16, fontweight='bold')
             ax.set_ylabel('Pressure (hPa)', fontsize=12)
 
         elif plot_type == 'temp_rainfall_correlation':
             # Scatter plot of temperature vs rainfall
-            max_temps = [record.max_temp for record in results if
-                         record.max_temp is not None and record.rainfall is not None]
+            max_temps = [record.daily_max_temp for record in results if
+                         record.daily_max_temp is not None and record.rainfall is not None]
             rainfall = [record.rainfall for record in results if
-                        record.max_temp is not None and record.rainfall is not None]
+                        record.daily_max_temp is not None and record.rainfall is not None]
 
             ax.scatter(max_temps, rainfall, alpha=0.6, color='coral')
             ax.set_title('Temperature vs Rainfall Correlation', fontsize=16, fontweight='bold')
             ax.set_xlabel('Max Temperature (°C)', fontsize=12)
             ax.set_ylabel('Rainfall (mm)', fontsize=12)
 
+        elif plot_type == 'wind_analysis':
+            wind_speeds = [record.wind_speed for record in results if record.wind_speed is not None]
+            valid_dates = [record.date for record in results if record.wind_speed is not None]
+
+            ax.plot(valid_dates, wind_speeds, 'orange', label='Wind Speed', linewidth=2)
+            ax.set_title('Wind Speed Over Time', fontsize=16, fontweight='bold')
+            ax.set_ylabel('Wind Speed (m/s)', fontsize=12)
+
         elif plot_type == 'extreme_values':
             # Collect all extreme values in one chart
             extremes_data = {}
 
             # Temperature extremes
-            max_temps = [record.max_temp for record in results if record.max_temp is not None]
-            min_temps = [record.min_temp for record in results if record.min_temp is not None]
+            max_temps = [record.daily_max_temp for record in results if record.daily_max_temp is not None]
+            min_temps = [record.daily_min_temp for record in results if record.daily_min_temp is not None]
             if max_temps and min_temps:
                 extremes_data['Highest Temp'] = max(max_temps)
                 extremes_data['Lowest Temp'] = min(min_temps)
@@ -693,19 +701,22 @@ def generate_plot():
                 extremes_data['Max Rainfall'] = max(rainfall_values)
 
             # Humidity extremes
-            humidity_morning = [record.humidity_morning for record in results if record.humidity_morning is not None]
-            humidity_evening = [record.humidity_evening for record in results if record.humidity_evening is not None]
-            if humidity_morning and humidity_evening:
-                all_humidity = humidity_morning + humidity_evening
-                extremes_data['Max Humidity'] = max(all_humidity)
-                extremes_data['Min Humidity'] = min(all_humidity)
+            humidity_values = [record.relative_humidity for record in results if record.relative_humidity is not None]
+            if humidity_values:
+                extremes_data['Max Humidity'] = max(humidity_values)
+                extremes_data['Min Humidity'] = min(humidity_values)
+
+            # Wind extremes
+            wind_values = [record.wind_speed for record in results if record.wind_speed is not None]
+            if wind_values:
+                extremes_data['Max Wind Speed'] = max(wind_values)
 
             if extremes_data:
                 fig, ax = plt.subplots(figsize=(12, 8))
 
                 labels = list(extremes_data.keys())
                 values = list(extremes_data.values())
-                colors = ['red', 'blue', 'darkblue', 'green', 'lightgreen'][:len(labels)]
+                colors = ['red', 'blue', 'darkblue', 'green', 'lightgreen', 'orange'][:len(labels)]
 
                 bars = ax.barh(labels, values, color=colors, alpha=0.8)
 
@@ -725,15 +736,16 @@ def generate_plot():
                 ax.set_title('Extreme Values Analysis', fontsize=16, fontweight='bold')
                 ax.axis('off')
 
-        # Format dates on x-axis
-        if plot_type != 'temp_rainfall_correlation':
+        # Format dates on x-axis (except for correlation plot)
+        if plot_type not in ['temp_rainfall_correlation', 'extreme_values']:
             ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
             ax.xaxis.set_major_locator(mdates.MonthLocator())
             plt.setp(ax.xaxis.get_majorticklabels(), rotation=45)
             ax.set_xlabel('Date', fontsize=12)
 
-        if plot_type in ['temperature_trend', 'humidity_comparison', 'pressure_analysis']:
+        if plot_type in ['temperature_trend', 'humidity_comparison', 'pressure_analysis', 'wind_analysis']:
             ax.legend()
+
         ax.grid(True, alpha=0.3)
         plt.tight_layout()
 
@@ -749,6 +761,9 @@ def generate_plot():
             'plot_data': f'data:image/png;base64,{img_data}',
             'plot_type': plot_type
         })
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 
 @app.route('/upload', methods=['POST'])
