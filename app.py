@@ -529,7 +529,6 @@ def download_data():
 
 @app.route('/stats')
 def get_stats():
-    try:
         total_records = WeatherData.query.count()
         locations_count = db.session.query(WeatherData.location.distinct()).count()
 
@@ -539,8 +538,8 @@ def get_stats():
         ).first()
 
         avg_temp = db.session.query(
-            db.func.avg(WeatherData.max_temp),
-            db.func.avg(WeatherData.min_temp)
+            db.func.avg(WeatherData.daily_max_temp),
+            db.func.avg(WeatherData.daily_min_temp)
         ).first()
 
         avg_rainfall = db.session.query(
@@ -548,8 +547,7 @@ def get_stats():
         ).first()
 
         avg_humidity = db.session.query(
-            db.func.avg(WeatherData.humidity_morning),
-            db.func.avg(WeatherData.humidity_evening)
+            db.func.avg(WeatherData.relative_humidity)
         ).first()
 
         return jsonify({
@@ -565,17 +563,14 @@ def get_stats():
             },
             'avg_rainfall': round(avg_rainfall[0], 2),
             'avg_humidity': {
-                'morning': round(avg_humidity[0] if avg_humidity else None),
-                'evening': round(avg_humidity[1] if avg_humidity else None)
+                'morning': round(avg_humidity[0] if avg_humidity else None)
             }
         })
-    except Exception as e:
-        return jsonify({'error': str(e)})
 
 
 @app.route('/plot', methods=['POST'])
 def generate_plot():
-    try:
+
         data = request.json
         plot_type = data.get('plot_type', 'temperature_trend')
 
@@ -590,13 +585,13 @@ def generate_plot():
         if data.get('location'):
             query = query.filter(WeatherData.location == data['location'])
         if data.get('min_temp_min'):
-            query = query.filter(WeatherData.min_temp >= float(data['min_temp_min']))
+            query = query.filter(WeatherData.daily_min_temp >= float(data['min_temp_min']))
         if data.get('min_temp_max'):
-            query = query.filter(WeatherData.min_temp <= float(data['min_temp_max']))
+            query = query.filter(WeatherData.daily_min_temp <= float(data['min_temp_max']))
         if data.get('max_temp_min'):
-            query = query.filter(WeatherData.max_temp >= float(data['max_temp_min']))
+            query = query.filter(WeatherData.daily_max_temp >= float(data['max_temp_min']))
         if data.get('max_temp_max'):
-            query = query.filter(WeatherData.max_temp <= float(data['max_temp_max']))
+            query = query.filter(WeatherData.daily_max_temp <= float(data['max_temp_max']))
         if data.get('rainfall_min'):
             query = query.filter(WeatherData.rainfall >= float(data['rainfall_min']))
         if data.get('rainfall_max'):
@@ -628,10 +623,10 @@ def generate_plot():
         dates = [record.date for record in results]
 
         if plot_type == 'temperature_trend':
-            max_temps = [record.max_temp for record in results if record.max_temp is not None]
-            min_temps = [record.min_temp for record in results if record.min_temp is not None]
-            valid_dates_max = [record.date for record in results if record.max_temp is not None]
-            valid_dates_min = [record.date for record in results if record.min_temp is not None]
+            max_temps = [record.daily_max_temp for record in results if record.daily_max_temp is not None]
+            min_temps = [record.daily_min_temp for record in results if record.daily_min_temp is not None]
+            valid_dates_max = [record.date for record in results if record.daily_max_temp is not None]
+            valid_dates_min = [record.date for record in results if record.daily_min_temp is not None]
 
             ax.plot(valid_dates_max, max_temps, 'r-', label='Max Temperature', linewidth=2)
             ax.plot(valid_dates_min, min_temps, 'b-', label='Min Temperature', linewidth=2)
@@ -755,10 +750,6 @@ def generate_plot():
             'plot_type': plot_type
         })
 
-    except Exception as e:
-        plt.close()
-        return jsonify({'success': False, 'error': str(e)})
-
 
 @app.route('/upload', methods=['POST'])
 def upload_data():
@@ -810,4 +801,4 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
 
-    app.run(debug=True)
+    app.run()
