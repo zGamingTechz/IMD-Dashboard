@@ -213,12 +213,21 @@ def load_excel_data(file_path):
         imported = 0
         skipped = 0
         errors = 0
+        filtered_station_index = 0
 
         for i, row in df.iterrows():
             try:
                 # Skipping rows with missing essential data
                 if pd.isna(row.get('year')) or pd.isna(row.get('month')) or pd.isna(row.get('day')):
                     skipped += 1
+                    continue
+
+                # Get station index and convert to string
+                station_index_raw = safe_string(row.get('station_index'))
+
+                # Skipping records where station index starts with '1'
+                if station_index_raw and station_index_raw.startswith('1'):
+                    filtered_station_index += 1
                     continue
 
                 # Parsing the corrupted column for rainfall and other data
@@ -234,8 +243,8 @@ def load_excel_data(file_path):
 
                 # Creating new weather data record
                 new_data = {
-                    'station_index': safe_string(row.get('station_index')),
-                    'location': stations.get(safe_string(row.get('station_index')), 'Unknown'),
+                    'station_index': station_index_raw,
+                    'location': stations.get(station_index_raw, 'Unknown'),
                     'year': safe_int(row.get('year')),
                     'month': safe_int(row.get('month')),
                     'day': safe_int(row.get('day')),
@@ -308,7 +317,8 @@ def load_excel_data(file_path):
 
         # Final commit
         db.session.commit()
-        print(f"Import complete: {imported} imported, {skipped} skipped, {errors} errors.")
+        print(
+            f"Import complete: {imported} imported, {skipped} skipped, {errors} errors, {filtered_station_index} filtered by station index.")
         return True
 
     except Exception as e:
