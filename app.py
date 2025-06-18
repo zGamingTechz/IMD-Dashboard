@@ -248,7 +248,7 @@ def load_excel_data(file_path):
                     'year': safe_int(row.get('year')),
                     'month': safe_int(row.get('month')),
                     'day': safe_int(row.get('day')),
-                    'hour': safe_int(row.get('hour')),
+                    'hour': safe_int_allow_zero(row.get('hour')),
 
                     # Pressure data
                     'station_level_pressure': safe_float(row.get('station_level_pressure')),
@@ -328,7 +328,7 @@ def load_excel_data(file_path):
 
 
 def safe_float(value):
-    """Safely convert value to float, return None if invalid"""
+    """Safely convert value to float, return None if invalid or zero"""
     if pd.isna(value) or value == '' or value is None:
         return None
     try:
@@ -336,13 +336,32 @@ def safe_float(value):
             value = value.strip()
             if value == '':
                 return None
-        return float(value)
+        float_val = float(value)
+        # Convert 0 to None
+        if float_val == 0.0:
+            return None
+        return float_val
     except (ValueError, TypeError):
         return None
 
 
 def safe_int(value):
-    """Safely convert value to integer, return None if invalid"""
+    """Safely convert value to integer, return None if invalid or zero"""
+    if pd.isna(value) or value == '' or value is None:
+        return None
+    try:
+        if isinstance(value, str):
+            value = value.strip()
+            if value == '':
+                return None
+        int_val = int(float(value))
+        return int_val
+    except (ValueError, TypeError):
+        return None
+
+
+def safe_int_allow_zero(value):
+    """Safely convert value to integer, allowing zero values (month, day, hour)"""
     if pd.isna(value) or value == '' or value is None:
         return None
     try:
