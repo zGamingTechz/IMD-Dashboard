@@ -28,26 +28,26 @@ ALLOWED_EXTENSIONS = {'.xls', '.xlsx', '.csv'}
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 stations = {
-    42343: 'Ajmer',
-    42447: 'Bhilwara',
-    42346: 'Vanasthali',
-    42255: 'Alwar',
-    42348: 'Jaipur',
-    42174: 'Pilani',
-    42249: 'Sikar',
-    42452: 'Kota',
-    42546: 'Chittorgarh',
-    42542: 'Dabok',
-    42435: 'Barmer',
-    42441: "E.R. Road (Pali)",
-    42328: "Jaisalmer",
-    42339: "Jodhpur",
-    42540: 'Mt. Abu',
-    42237: 'Phalodi',
-    42165: 'Bikaner',
-    42170: 'Churu',
-    42123: 'S. Ganganagar',
-    'Will add more': 0
+    "42343": "Ajmer",
+    "42447": "Bhilwara",
+    "42346": "Vanasthali",
+    "42255": "Alwar",
+    "42348": "Jaipur",
+    "42174": "Pilani",
+    "42249": "Sikar",
+    "42452": "Kota",
+    "42546": "Chittorgarh",
+    "42542": "Dabok",
+    "42435": "Barmer",
+    "42441": "E.R. Road (Pali)",
+    "42328": "Jaisalmer",
+    "42339": "Jodhpur",
+    "42540": "Mt. Abu",
+    "42237": "Phalodi",
+    "42165": "Bikaner",
+    "42170": "Churu",
+    "42123": "S. Ganganagar",
+    "Will add more": 0
 }
 
 

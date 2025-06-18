@@ -24,8 +24,8 @@ function loadStats() {
             document.getElementById('avgMaxTemp').textContent = data.avg_temps.max ? data.avg_temps.max + '°C' : 'N/A';
             document.getElementById('avgMinTemp').textContent = data.avg_temps.min ? data.avg_temps.min + '°C' : 'N/A';
             document.getElementById('avgRainfall').textContent = data.avg_rainfall ? data.avg_rainfall + 'mm' : 'N/A';
-            document.getElementById('avgHumMor').textContent = data.avg_humidity.morning ? data.avg_humidity.morning : 'N/A';
-            document.getElementById('avgHumEve').textContent = data.avg_humidity.evening ? data.avg_humidity.evening : 'N/A';
+
+            document.getElementById('avgHumMor').textContent = data.avg_humidity ? data.avg_humidity + '%' : 'N/A';
         })
         .catch(error => {
             console.error('Error loading stats:', error);
@@ -37,14 +37,27 @@ function collectFilters() {
         start_date: document.getElementById('startDate').value,
         end_date: document.getElementById('endDate').value,
         location: document.getElementById('location').value,
-        min_temp_min: document.getElementById('minTempMin').value,
-        min_temp_max: document.getElementById('minTempMax').value,
-        max_temp_min: document.getElementById('maxTempMin').value,
-        max_temp_max: document.getElementById('maxTempMax').value,
+
+        daily_min_temp_min: document.getElementById('minTempMin').value,
+        daily_min_temp_max: document.getElementById('minTempMax').value,
+        daily_max_temp_min: document.getElementById('maxTempMin').value,
+        daily_max_temp_max: document.getElementById('maxTempMax').value,
+
         rainfall_min: document.getElementById('rainfallMin').value,
         rainfall_max: document.getElementById('rainfallMax').value,
-        humidity_min: document.getElementById('humidityMin').value,
-        humidity_max: document.getElementById('humidityMax').value
+
+        relative_humidity_min: document.getElementById('humidityMin').value,
+        relative_humidity_max: document.getElementById('humidityMax').value,
+
+        // Additional filters for new data fields
+        dry_bulb_temp_min: document.getElementById('dryBulbTempMin')?.value,
+        dry_bulb_temp_max: document.getElementById('dryBulbTempMax')?.value,
+        wet_bulb_temp_min: document.getElementById('wetBulbTempMin')?.value,
+        wet_bulb_temp_max: document.getElementById('wetBulbTempMax')?.value,
+        wind_speed_min: document.getElementById('windSpeedMin')?.value,
+        wind_speed_max: document.getElementById('windSpeedMax')?.value,
+        station_level_pressure_min: document.getElementById('stationPressureMin')?.value,
+        station_level_pressure_max: document.getElementById('stationPressureMax')?.value
     };
 }
 
@@ -106,24 +119,31 @@ function displayResults(data) {
     const tbody = document.getElementById('dataTableBody');
     tbody.innerHTML = '';
     if (data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="13" class="no-data">No data found matching your criteria</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="20" class="no-data">No data found matching your criteria</td></tr>';
     } else {
         data.forEach(record => {
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td>${record.date}</td>
+                <td>${record.date || 'N/A'}</td>
                 <td>${record.location || 'N/A'}</td>
-                <td>${record.max_temp !== null ? record.max_temp.toFixed(1) : 'N/A'}</td>
-                <td>${record.min_temp !== null ? record.min_temp.toFixed(1) : 'N/A'}</td>
-                <td>${record.rainfall !== null ? record.rainfall.toFixed(1) : 'N/A'}</td>
-                <td>${record.humidity_morning !== null ? record.humidity_morning.toFixed(1) : 'N/A'}</td>
-                <td>${record.humidity_evening !== null ? record.humidity_evening.toFixed(1) : 'N/A'}</td>
-                <td>${record.station_pressure_morning !== null ? record.station_pressure_morning.toFixed(2) : 'N/A'}</td>
-                <td>${record.station_pressure_evening !== null ? record.station_pressure_evening.toFixed(2) : 'N/A'}</td>
-                <td>${record.sea_level_pressure_morning !== null ? record.sea_level_pressure_morning.toFixed(2) : 'N/A'}</td>
-                <td>${record.sea_level_pressure_evening !== null ? record.sea_level_pressure_evening.toFixed(2) : 'N/A'}</td>
-                <td>${record.vapour_pressure_morning !== null ? record.vapour_pressure_morning.toFixed(2) : 'N/A'}</td>
-                <td>${record.vapour_pressure_evening !== null ? record.vapour_pressure_evening.toFixed(2) : 'N/A'}</td>
+                <td>${record.station_index || 'N/A'}</td>
+                <td>${record.hour !== null ? record.hour : 'N/A'}</td>
+                <td>${record.daily_max_temp !== null ? record.daily_max_temp.toFixed(1) + '°C' : 'N/A'}</td>
+                <td>${record.daily_min_temp !== null ? record.daily_min_temp.toFixed(1) + '°C' : 'N/A'}</td>
+                <td>${record.daily_mean_temp !== null ? record.daily_mean_temp.toFixed(1) + '°C' : 'N/A'}</td>
+                <td>${record.dry_bulb_temp !== null ? record.dry_bulb_temp.toFixed(1) + '°C' : 'N/A'}</td>
+                <td>${record.wet_bulb_temp !== null ? record.wet_bulb_temp.toFixed(1) + '°C' : 'N/A'}</td>
+                <td>${record.dew_point_temp !== null ? record.dew_point_temp.toFixed(1) + '°C' : 'N/A'}</td>
+                <td>${record.relative_humidity !== null ? record.relative_humidity.toFixed(1) + '%' : 'N/A'}</td>
+                <td>${record.rainfall !== null ? record.rainfall.toFixed(1) + 'mm' : 'N/A'}</td>
+                <td>${record.station_level_pressure !== null ? record.station_level_pressure.toFixed(2) + ' hPa' : 'N/A'}</td>
+                <td>${record.mean_sea_level_pressure !== null ? record.mean_sea_level_pressure.toFixed(2) + ' hPa' : 'N/A'}</td>
+                <td>${record.vapor_pressure !== null ? record.vapor_pressure.toFixed(2) + ' hPa' : 'N/A'}</td>
+                <td>${record.wind_speed !== null ? record.wind_speed.toFixed(1) + ' m/s' : 'N/A'}</td>
+                <td>${record.wind_direction !== null ? record.wind_direction.toFixed(0) + '°' : 'N/A'}</td>
+                <td>${record.wind_gust !== null ? record.wind_gust.toFixed(1) + ' m/s' : 'N/A'}</td>
+                <td>${record.visibility !== null ? record.visibility.toFixed(1) + ' km' : 'N/A'}</td>
+                <td>${record.total_cloud_cover !== null ? record.total_cloud_cover.toFixed(1) : 'N/A'}</td>
             `;
             tbody.appendChild(row);
         });
@@ -137,6 +157,7 @@ function updatePagination(current, total, totalRecords) {
     const container = document.getElementById('paginationContainer');
     container.innerHTML = '';
     if (total <= 1) return;
+
     if (current > 1) {
         const prevBtn = document.createElement('button');
         prevBtn.className = 'pagination-btn';
@@ -144,8 +165,10 @@ function updatePagination(current, total, totalRecords) {
         prevBtn.onclick = () => searchData(current - 1);
         container.appendChild(prevBtn);
     }
+
     const startPage = Math.max(1, current - 2);
     const endPage = Math.min(total, current + 2);
+
     for (let i = startPage; i <= endPage; i++) {
         const pageBtn = document.createElement('button');
         pageBtn.className = `pagination-btn ${i === current ? 'active' : ''}`;
@@ -153,6 +176,7 @@ function updatePagination(current, total, totalRecords) {
         pageBtn.onclick = () => searchData(i);
         container.appendChild(pageBtn);
     }
+
     if (current < total) {
         const nextBtn = document.createElement('button');
         nextBtn.className = 'pagination-btn';
@@ -160,6 +184,7 @@ function updatePagination(current, total, totalRecords) {
         nextBtn.onclick = () => searchData(current + 1);
         container.appendChild(nextBtn);
     }
+
     const info = document.createElement('div');
     info.className = 'pagination-info';
     info.textContent = `Page ${current} of ${total} (${totalRecords} total records)`;
@@ -213,9 +238,21 @@ function downloadData() {
 }
 
 function clearFilters() {
-    ['startDate', 'endDate', 'location', 'minTempMin', 'minTempMax', 'maxTempMin', 'maxTempMax', 'rainfallMin', 'rainfallMax', 'humidityMin', 'humidityMax'].forEach(id => {
-        document.getElementById(id).value = '';
+    const filterIds = [
+        'startDate', 'endDate', 'location',
+        'minTempMin', 'minTempMax', 'maxTempMin', 'maxTempMax',
+        'rainfallMin', 'rainfallMax', 'humidityMin', 'humidityMax',
+        'dryBulbTempMin', 'dryBulbTempMax', 'wetBulbTempMin', 'wetBulbTempMax',
+        'windSpeedMin', 'windSpeedMax', 'stationPressureMin', 'stationPressureMax'
+    ];
+
+    filterIds.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.value = '';
+        }
     });
+
     document.getElementById('resultsContainer').style.display = 'none';
     document.getElementById('plotContainer').style.display = 'none';
     document.getElementById('paginationContainer').innerHTML = '';
@@ -272,12 +309,11 @@ function downloadPlot() {
     }
 
     try {
-        // Create a temporary anchor element
+        // Temporary anchor element
         const link = document.createElement('a');
         link.href = plotImage.src;
         link.download = `weather_plot_${new Date().getTime()}.png`;
 
-        // Temporarily add to DOM and click
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -339,4 +375,93 @@ function takeBackup() {
         console.error('Backup error:', error);
         showMessage('Backup error: ' + error.message, 'error');
     });
+}
+
+// Additional utility functions for new data structure
+function formatTemperature(temp) {
+    return temp !== null ? temp.toFixed(1) + '°C' : 'N/A';
+}
+
+function formatPressure(pressure) {
+    return pressure !== null ? pressure.toFixed(2) + ' hPa' : 'N/A';
+}
+
+function formatHumidity(humidity) {
+    return humidity !== null ? humidity.toFixed(1) + '%' : 'N/A';
+}
+
+function formatWind(wind) {
+    return wind !== null ? wind.toFixed(1) + ' m/s' : 'N/A';
+}
+
+function formatWindDirection(direction) {
+    return direction !== null ? direction.toFixed(0) + '°' : 'N/A';
+}
+
+function formatRainfall(rainfall) {
+    return rainfall !== null ? rainfall.toFixed(1) + ' mm' : 'N/A';
+}
+
+function formatVisibility(visibility) {
+    return visibility !== null ? visibility.toFixed(1) + ' km' : 'N/A';
+}
+
+// Export data summary function
+function exportDataSummary() {
+    const filters = collectFilters();
+    showMessage('Generating data summary...', 'info');
+
+    fetch('/query', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({...filters, per_page: 10000}) // Get more data for summary
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.data.length > 0) {
+            generateDataSummaryReport(data.data);
+        } else {
+            showMessage('No data available for summary', 'error');
+        }
+    })
+    .catch(error => {
+        showMessage('Error generating summary: ' + error.message, 'error');
+    });
+}
+
+function generateDataSummaryReport(data) {
+    // Calculate statistics
+    const temps = data.filter(r => r.daily_max_temp !== null).map(r => r.daily_max_temp);
+    const minTemps = data.filter(r => r.daily_min_temp !== null).map(r => r.daily_min_temp);
+    const rainfall = data.filter(r => r.rainfall !== null && r.rainfall > 0).map(r => r.rainfall);
+    const humidity = data.filter(r => r.relative_humidity !== null).map(r => r.relative_humidity);
+    const windSpeeds = data.filter(r => r.wind_speed !== null).map(r => r.wind_speed);
+
+    const summary = {
+        totalRecords: data.length,
+        temperatureStats: {
+            maxTemp: temps.length > 0 ? Math.max(...temps) : 'N/A',
+            minTemp: minTemps.length > 0 ? Math.min(...minTemps) : 'N/A',
+            avgMaxTemp: temps.length > 0 ? (temps.reduce((a, b) => a + b, 0) / temps.length).toFixed(1) : 'N/A',
+            avgMinTemp: minTemps.length > 0 ? (minTemps.reduce((a, b) => a + b, 0) / minTemps.length).toFixed(1) : 'N/A'
+        },
+        rainfallStats: {
+            totalRainfall: rainfall.length > 0 ? rainfall.reduce((a, b) => a + b, 0).toFixed(1) : 'N/A',
+            avgRainfall: rainfall.length > 0 ? (rainfall.reduce((a, b) => a + b, 0) / rainfall.length).toFixed(1) : 'N/A',
+            maxRainfall: rainfall.length > 0 ? Math.max(...rainfall) : 'N/A',
+            rainyDays: rainfall.length
+        },
+        humidityStats: {
+            avgHumidity: humidity.length > 0 ? (humidity.reduce((a, b) => a + b, 0) / humidity.length).toFixed(1) : 'N/A',
+            maxHumidity: humidity.length > 0 ? Math.max(...humidity) : 'N/A',
+            minHumidity: humidity.length > 0 ? Math.min(...humidity) : 'N/A'
+        },
+        windStats: {
+            avgWindSpeed: windSpeeds.length > 0 ? (windSpeeds.reduce((a, b) => a + b, 0) / windSpeeds.length).toFixed(1) : 'N/A',
+            maxWindSpeed: windSpeeds.length > 0 ? Math.max(...windSpeeds) : 'N/A'
+        }
+    };
+
+    console.log('Weather Data Summary:', summary);
+    showMessage('Data summary generated. Check console for details.', 'success');
 }
