@@ -5,11 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="74e3d717-05c2-41b2-99d6-82db3773a030" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/extensions.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/routes/add_data_dashboard.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/templates/add_data.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/instance/weather_data.db" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/routes/add_data_dashboard.py" beforeDir="false" afterPath="$PROJECT_DIR$/routes/add_data_dashboard.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -20,6 +18,7 @@
     <option name="RECENT_TEMPLATES">
       <list>
         <option value="Python Script" />
+        <option value="HTML File" />
       </list>
     </option>
   </component>
@@ -37,6 +36,7 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "DefaultHtmlFileTemplate": "HTML File",
     "Python.add_data_dashboard.executor": "Run",
     "Python.app.executor": "Run",
     "Python.test.executor": "Run",

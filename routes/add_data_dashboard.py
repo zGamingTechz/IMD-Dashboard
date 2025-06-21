@@ -6,4 +6,4 @@ add_data_bp = Blueprint('add_data', __name__)
 
 @add_data_bp.route('/add-data', methods=['GET', 'POST'])
 def add_data():
-    return "h"
+    return render_template("add_data.html")
