@@ -426,9 +426,8 @@
 
         // Auto-validate on form submission
         document.getElementById('weatherDataForm').addEventListener('submit', function(e) {
-            if (!document.getElementById('forceSubmitBtn').contains(e.submitter)) {
-                e.preventDefault();
-                validateForm();
+            if (e.submitter && e.submitter.id === 'submitBtn') {
+                return true;
             }
         });
 
