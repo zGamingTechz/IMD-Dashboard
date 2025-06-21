@@ -388,29 +388,27 @@
                 }
             }
 
-            displayValidationResults(warnings);
+            if (warnings.length > 0) {
+                displayValidationResults(warnings);
+            } else {
+                // If no warnings, submit the form directly
+                form.submit();
+            }
         }
 
         function displayValidationResults(warnings) {
             const warningsContainer = document.getElementById('validationWarnings');
-            const submitBtn = document.getElementById('submitBtn');
             const forceSubmitBtn = document.getElementById('forceSubmitBtn');
 
-            if (warnings.length > 0) {
-                let warningsHtml = '<div class="message message-warning"><i class="fas fa-exclamation-triangle"></i><strong>Data Validation Warnings:</strong><ul>';
-                warnings.forEach(warning => {
-                    warningsHtml += `<li>${warning}</li>`;
-                });
-                warningsHtml += '</ul></div>';
+            let warningsHtml = '<div class="message message-warning"><i class="fas fa-exclamation-triangle"></i><strong>Data Validation Warnings:</strong><ul>';
+            warnings.forEach(warning => {
+                warningsHtml += `<li>${warning}</li>`;
+            });
+            warningsHtml += '</ul></div>';
 
-                warningsContainer.innerHTML = warningsHtml;
-                warningsContainer.style.display = 'block';
-                forceSubmitBtn.style.display = 'inline-flex';
-            } else {
-                warningsContainer.innerHTML = '<div class="message message-success"><i class="fas fa-check-circle"></i>All data values are within normal meteorological ranges!</div>';
-                warningsContainer.style.display = 'block';
-                forceSubmitBtn.style.display = 'none';
-            }
+            warningsContainer.innerHTML = warningsHtml;
+            warningsContainer.style.display = 'block';
+            forceSubmitBtn.style.display = 'inline-flex';
 
             // Scroll to warnings
             warningsContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -426,8 +424,9 @@
 
         // Auto-validate on form submission
         document.getElementById('weatherDataForm').addEventListener('submit', function(e) {
-            if (e.submitter && e.submitter.id === 'submitBtn') {
-                return true;
+            if (!document.getElementById('forceSubmitBtn').contains(e.submitter)) {
+                e.preventDefault();
+                validateForm();
             }
         });
 
