@@ -1,5 +1,6 @@
-from flask import Blueprint, request, jsonify, send_file
+from flask import Blueprint, request, jsonify, send_file, render_template
 from models import WeatherData
+from extensions import db
 from datetime import datetime
 import pandas as pd
 import numpy as np
@@ -8,6 +9,28 @@ import scipy.stats as stats
 
 
 advanced_query_bp = Blueprint('advanced_query', __name__, url_prefix='/advanced-query')
+
+
+@advanced_query_bp.route('/')
+def advanced_query_page():
+    # Get locations for dropdown
+    locations = db.session.query(WeatherData.location.distinct()).filter(
+        WeatherData.location.isnot(None),
+        WeatherData.location != ''
+    ).all()
+    locations = [loc[0] for loc in locations if loc[0]]
+
+    # Get date range
+    date_range = db.session.query(
+        db.func.min(WeatherData.date),
+        db.func.max(WeatherData.date)
+    ).first()
+
+    return render_template('advanced_query.html',
+                         locations=locations,
+                         min_date=date_range[0],
+                         max_date=date_range[1]
+    )
 
 
 @advanced_query_bp.route('/columns', methods=['GET'])
