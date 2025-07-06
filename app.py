@@ -735,6 +735,29 @@ def take_backup():
     except Exception as e:
         return jsonify({'success': False, 'error': f'Backup failed: {str(e)}'}), 500
 
+
+@advanced_query_bp.route('/')
+def advanced_query_page():
+    # Get locations for dropdown
+    locations = db.session.query(WeatherData.location.distinct()).filter(
+        WeatherData.location.isnot(None),
+        WeatherData.location != ''
+    ).all()
+    locations = [loc[0] for loc in locations if loc[0]]
+
+    # Get date range
+    date_range = db.session.query(
+        db.func.min(WeatherData.date),
+        db.func.max(WeatherData.date)
+    ).first()
+
+    return render_template('advanced_query.html',
+                         locations=locations,
+                         min_date=date_range[0],
+                         max_date=date_range[1]
+    )
+
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
