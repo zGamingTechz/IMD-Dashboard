@@ -104,7 +104,7 @@ def advanced_query():
                 selected_columns.insert(1, 'location')
             df = df[selected_columns]
 
-        response_data = df.to_dict(orient='records')
+        response_data = df.replace({np.nan: None}).to_dict(orient='records')
 
         return jsonify({
             'success': True,
@@ -164,6 +164,10 @@ def detect_outliers():
                     'value': values[i],
                     'z_score': z
                 })
+
+        for outlier in outliers:
+            if isinstance(outlier['value'], float) and np.isnan(outlier['value']):
+                outlier['value'] = None
 
         return jsonify({
             'success': True,
