@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Weather Data Query</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style_advanced.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="advanced-container">
+        <!-- Header Section -->
+        <header class="advanced-header">
+            <div class="header-content">
+                <div class="header-icon">
+                    <img src="{{ url_for('static', filename='IMD Logo.png') }}" alt="IMD Logo">
+                </div>
+                <div class="header-text">
+                    <h1>Advanced Weather Data Explorer</h1>
+                    <p>Powerful querying with comprehensive filters and analytics</p>
+                </div>
+            </div>
+        </header>
+
+        <div class="advanced-content">
+            <!-- Sidebar Filters -->
+            <aside class="advanced-sidebar">
+                <div class="sidebar-section">
+                    <div class="section-header">
+                        <i class="fas fa-sliders-h"></i>
+                        <h3>Advanced Filters</h3>
+                    </div>
+
+                    <!-- Quick Filters -->
+                    <div class="filter-section">
+                        <h4><i class="fas fa-bolt"></i> Quick Filters</h4>
+                        <div class="quick-filters">
+                            <button class="quick-filter-btn" data-filter="rainfall_gt_10">
+                                <i class="fas fa-cloud-rain"></i> Heavy Rain
+                            </button>
+                            <button class="quick-filter-btn" data-filter="high_temp">
+                                <i class="fas fa-temperature-high"></i> Heat Wave
+                            </button>
+                            <button class="quick-filter-btn" data-filter="low_temp">
+                                <i class="fas fa-temperature-low"></i> Cold Spell
+                            </button>
+                            <button class="quick-filter-btn" data-filter="high_humidity">
+                                <i class="fas fa-tint"></i> High Humidity
+                            </button>
+                            <button class="quick-filter-btn" data-filter="windy">
+                                <i class="fas fa-wind"></i> Windy Days
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Date Range -->
+                    <div class="filter-section">
+                        <h4><i class="fas fa-calendar-alt"></i> Date Range</h4>
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label for="startDate"><i class="far fa-calendar-alt"></i> Start Date</label>
+                                <input type="date" id="startDate" class="form-input" value="{{ min_date }}">
+                            </div>
+                            <div class="input-group">
+                                <label for="endDate"><i class="far fa-calendar-alt"></i> End Date</label>
+                                <input type="date" id="endDate" class="form-input" value="{{ max_date }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Location Filter -->
+                    <div class="filter-section">
+                        <h4><i class="fas fa-map-marker-alt"></i> Location</h4>
+                        <div class="input-group">
+                            <select id="location" class="form-select">
+                                <option value="">All Locations</option>
+                                {% for location in locations %}
+                                <option value="{{ location }}">{{ location }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Temperature Filters -->
+                    <div class="filter-section">
+                        <h4><i class="fas fa-thermometer-half"></i> Temperature Range (°C)</h4>
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label for="minTempMin">Min Temp ≥</label>
+                                <input type="number" id="minTempMin" step="0.1" class="form-input" placeholder="e.g., 10">
+                            </div>
+                            <div class="input-group">
+                                <label for="minTempMax">Min Temp ≤</label>
+                                <input type="number" id="minTempMax" step="0.1" class="form-input" placeholder="e.g., 25">
+                            </div>
+                        </div>
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label for="maxTempMin">Max Temp ≥</label>
+                                <input type="number" id="maxTempMin" step="0.1" class="form-input" placeholder="e.g., 20">
+                            </div>
+                            <div class="input-group">
+                                <label for="maxTempMax">Max Temp ≤</label>
+                                <input type="number" id="maxTempMax" step="0.1" class="form-input" placeholder="e.g., 40">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Time of Day -->
+                    <div class="filter-section">
+                        <h4><i class="fas fa-clock"></i> Time of Day</h4>
+                        <div class="time-filters">
+                            <button class="time-filter-btn" data-time="morning">
+                                <i class="fas fa-sun"></i> Morning
+                            </button>
+                            <button class="time-filter-btn" data-time="afternoon">
+                                <i class="fas fa-sun"></i> Afternoon
+                            </button>
+                            <button class="time-filter-btn" data-time="evening">
+                                <i class="fas fa-moon"></i> Evening
+                            </button>
+                            <button class="time-filter-btn" data-time="night">
+                                <i class="fas fa-moon"></i> Night
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Rainfall Filter -->
+                    <div class="filter-section">
+                        <h4><i class="fas fa-cloud-rain"></i> Rainfall (mm)</h4>
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label for="rainfallMin">Min ≥</label>
+                                <input type="number" id="rainfallMin" step="0.1" class="form-input" placeholder="e.g., 0">
+                            </div>
+                            <div class="input-group">
+                                <label for="rainfallMax">Max ≤</label>
+                                <input type="number" id="rainfallMax" step="0.1" class="form-input" placeholder="e.g., 100">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Humidity Filter -->
+                    <div class="filter-section">
+                        <h4><i class="fas fa-tint"></i> Humidity (%)</h4>
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label for="humidityMin">Min ≥</label>
+                                <input type="number" id="humidityMin" min="0" max="100" class="form-input" placeholder="e.g., 30">
+                            </div>
+                            <div class="input-group">
+                                <label for="humidityMax">Max ≤</label>
+                                <input type="number" id="humidityMax" min="0" max="100" class="form-input" placeholder="e.g., 90">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Wind Filter -->
+                    <div class="filter-section">
+                        <h4><i class="fas fa-wind"></i> Wind Speed (m/s)</h4>
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label for="windSpeedMin">Min ≥</label>
+                                <input type="number" id="windSpeedMin" step="0.1" class="form-input" placeholder="e.g., 0">
+                            </div>
+                            <div class="input-group">
+                                <label for="windSpeedMax">Max ≤</label>
+                                <input type="number" id="windSpeedMax" step="0.1" class="form-input" placeholder="e.g., 20">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pressure Filter -->
+                    <div class="filter-section">
+                        <h4><i class="fas fa-weight-hanging"></i> Pressure (hPa)</h4>
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label for="pressureMin">Min ≥</label>
+                                <input type="number" id="pressureMin" step="0.1" class="form-input" placeholder="e.g., 900">
+                            </div>
+                            <div class="input-group">
+                                <label for="pressureMax">Max ≤</label>
+                                <input type="number" id="pressureMax" step="0.1" class="form-input" placeholder="e.g., 1100">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cloud Cover Filter -->
+                    <div class="filter-section">
+                        <h4><i class="fas fa-cloud"></i> Cloud Cover</h4>
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label for="cloudCoverMin">Min ≥</label>
+                                <input type="number" id="cloudCoverMin" min="0" max="10" class="form-input" placeholder="0-10">
+                            </div>
+                            <div class="input-group">
+                                <label for="cloudCoverMax">Max ≤</label>
+                                <input type="number" id="cloudCoverMax" min="0" max="10" class="form-input" placeholder="0-10">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Column Selection -->
+                    <div class="filter-section">
+                        <h4><i class="fas fa-columns"></i> Select Columns</h4>
+                        <div class="columns-container" id="columnsContainer">
+                            <!-- Will be populated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Outlier Detection -->
+                    <div class="filter-section">
+                        <h4><i class="fas fa-exclamation-triangle"></i> Outlier Detection</h4>
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label for="outlierColumn">Column</label>
+                                <select id="outlierColumn" class="form-select">
+                                    <option value="">Select column</option>
+                                    <!-- Will be populated by JavaScript -->
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label for="outlierThreshold">Threshold (σ)</label>
+                                <input type="number" id="outlierThreshold" value="3" step="0.1" min="1" class="form-input">
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label for="outlierLocation">Filter by Location</label>
+                            <select id="outlierLocation" class="form-select">
+                                <option value="">All Locations</option>
+                                {% for location in locations %}
+                                <option value="{{ location }}">{{ location }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" id="searchBtn">
+                            <i class="fas fa-search"></i> Search Data
+                        </button>
+                        <button class="btn btn-success" id="downloadBtn">
+                            <i class="fas fa-download"></i> Download
+                        </button>
+                        <button class="btn btn-info" id="outliersBtn">
+                            <i class="fas fa-chart-line"></i> Find Outliers
+                        </button>
+                        <button class="btn btn-warning" id="clearBtn">
+                            <i class="fas fa-refresh"></i> Clear Filters
+                        </button>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main Content Area -->
+            <main class="advanced-main">
+                <div id="messageContainer" class="message-container"></div>
+
+                <div id="loadingContainer" class="loading-container">
+                    <div class="loading-spinner"></div>
+                    <p>Loading weather data...</p>
+                </div>
+
+                <!-- Results Summary -->
+                <div class="summary-container" id="summaryContainer">
+                    <div class="summary-card">
+                        <div class="summary-icon">
+                            <i class="fas fa-database"></i>
+                        </div>
+                        <div class="summary-info">
+                            <div class="summary-value" id="totalRecords">-</div>
+                            <div class="summary-label">Total Records</div>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-icon">
+                            <i class="fas fa-map-marked-alt"></i>
+                        </div>
+                        <div class="summary-info">
+                            <div class="summary-value" id="locationsCount">-</div>
+                            <div class="summary-label">Locations</div>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-icon">
+                            <i class="fas fa-temperature-high"></i>
+                        </div>
+                        <div class="summary-info">
+                            <div class="summary-value" id="maxTemp">-</div>
+                            <div class="summary-label">Max Temp</div>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-icon">
+                            <i class="fas fa-temperature-low"></i>
+                        </div>
+                        <div class="summary-info">
+                            <div class="summary-value" id="minTemp">-</div>
+                            <div class="summary-label">Min Temp</div>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-icon">
+                            <i class="fas fa-cloud-rain"></i>
+                        </div>
+                        <div class="summary-info">
+                            <div class="summary-value" id="maxRainfall">-</div>
+                            <div class="summary-label">Max Rainfall</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results Section -->
+                <div class="results-section">
+                    <div class="section-header">
+                        <i class="fas fa-table"></i>
+                        <h3>Query Results</h3>
+                        <div class="results-controls">
+                            <span id="resultsCount" class="results-count">0 records</span>
+                            <select id="perPage" class="form-select">
+                                <option value="10">10 per page</option>
+                                <option value="25">25 per page</option>
+                                <option value="50">50 per page</option>
+                                <option value="100">100 per page</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="resultsContainer" class="table-container">
+                        <div class="table-wrapper">
+                            <table class="data-table" id="resultsTable">
+                                <thead>
+                                    <tr id="tableHeaders"></tr>
+                                </thead>
+                                <tbody id="dataTableBody"></tbody>
+                            </table>
+                        </div>
+                        <div class="pagination-wrapper" id="paginationContainer"></div>
+                    </div>
+                </div>
+
+                <!-- Outliers Section -->
+                <div class="results-section" id="outliersSection">
+                    <div class="section-header">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h3>Outlier Detection Results</h3>
+                        <span id="outliersCount" class="results-count">0 outliers</span>
+                    </div>
+
+                    <div id="outliersContainer" class="table-container">
+                        <div class="table-wrapper">
+                            <table class="data-table" id="outliersTable">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Location</th>
+                                        <th>Value</th>
+                                        <th>Z-Score</th>
+                                        <th>Deviation</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="outliersTableBody"></tbody>
+                            </table>
+                        </div>
+                        <div class="pagination-wrapper" id="outliersPaginationContainer"></div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script_advanced.js') }}"></script>
+</body>
+</html>

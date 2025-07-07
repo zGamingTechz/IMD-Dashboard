@@ -5,8 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="74e3d717-05c2-41b2-99d6-82db3773a030" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/static/script_advanced.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/static/style_advanced.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/templates/advanced_dashboard.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/routes/advanced_query.py" beforeDir="false" afterPath="$PROJECT_DIR$/routes/advanced_query.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/advanced_query.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/advanced_query.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -16,8 +20,8 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
-        <option value="HTML File" />
         <option value="Python Script" />
+        <option value="HTML File" />
       </list>
     </option>
   </component>
@@ -50,6 +54,9 @@
     <key name="CopyFile.RECENT_KEYS">
       <recent name="D:\Developer\Python\IMD Dashboard" />
       <recent name="D:\Developer\Python\IMD Dashboard\static" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\Developer\Python\IMD Dashboard\templates" />
     </key>
   </component>
   <component name="SharedIndexes">
