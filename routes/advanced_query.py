@@ -48,13 +48,16 @@ def advanced_query():
             except:
                 pass
 
-        # Location filter (multi-select support)
+        # Location filter (multi-select support) - FIXED
         locations = data.get('location')
         if locations:
-            if isinstance(locations, list):
-                query = query.filter(WeatherData.location.in_(locations))
-            else:
-                query = query.filter(WeatherData.location == locations)
+            if isinstance(locations, list) and len(locations) > 0:
+                # Filter out empty strings and None values
+                valid_locations = [loc for loc in locations if loc and loc.strip()]
+                if valid_locations:
+                    query = query.filter(WeatherData.location.in_(valid_locations))
+            elif isinstance(locations, str) and locations.strip():
+                query = query.filter(WeatherData.location == locations.strip())
 
         def get_float(value):
             try:
@@ -62,20 +65,22 @@ def advanced_query():
             except:
                 return None
 
-        def range_filter(column, min_key, max_key):
+        # Fixed range_filter function to properly handle query modifications
+        def apply_range_filter(column, min_key, max_key):
+            nonlocal query
             min_val, max_val = get_float(data.get(min_key)), get_float(data.get(max_key))
             if min_val is not None:
                 query = query.filter(getattr(WeatherData, column) >= min_val)
             if max_val is not None:
                 query = query.filter(getattr(WeatherData, column) <= max_val)
 
-        range_filter('daily_min_temp', 'min_temp_min', 'min_temp_max')
-        range_filter('daily_max_temp', 'max_temp_min', 'max_temp_max')
-        range_filter('relative_humidity', 'humidity_min', 'humidity_max')
-        range_filter('rainfall', 'rainfall_min', 'rainfall_max')
-        range_filter('wind_speed', 'wind_speed_min', 'wind_speed_max')
-        range_filter('mean_sea_level_pressure', 'pressure_min', 'pressure_max')
-        range_filter('total_cloud_cover', 'cloud_cover_min', 'cloud_cover_max')
+        apply_range_filter('daily_min_temp', 'min_temp_min', 'min_temp_max')
+        apply_range_filter('daily_max_temp', 'max_temp_min', 'max_temp_max')
+        apply_range_filter('relative_humidity', 'humidity_min', 'humidity_max')
+        apply_range_filter('rainfall', 'rainfall_min', 'rainfall_max')
+        apply_range_filter('wind_speed', 'wind_speed_min', 'wind_speed_max')
+        apply_range_filter('mean_sea_level_pressure', 'pressure_min', 'pressure_max')
+        apply_range_filter('total_cloud_cover', 'cloud_cover_min', 'cloud_cover_max')
 
         # Time of day filtering
         time_map = {
@@ -105,19 +110,42 @@ def advanced_query():
         results = query.order_by(WeatherData.date.desc()).paginate(page=page, per_page=per_page, error_out=False)
 
         # Output with selected columns
-        selected_columns = data.get('columns') or ['date', 'location', 'station_index', 'daily_max_temp', 'daily_min_temp', 'rainfall']
+        selected_columns = data.get('columns') or ['date', 'location', 'station_index', 'daily_max_temp',
+                                                   'daily_min_temp', 'rainfall']
         response_data = []
         for record in results.items:
             row = record.to_dict()
             filtered = {col: ("N/A" if row.get(col) in [None, '', 'NaN'] else row.get(col)) for col in selected_columns}
             response_data.append(filtered)
 
+        # Calculate summary statistics for dry_bulb_temp - FIXED
+        summary_stats = {}
+        if results.items:
+            # Get dry_bulb_temp values that are not None
+            dry_bulb_temps = [getattr(record, 'dry_bulb_temp') for record in results.items
+                              if getattr(record, 'dry_bulb_temp') is not None]
+
+            if dry_bulb_temps:
+                summary_stats['max_temp'] = max(dry_bulb_temps)
+                summary_stats['min_temp'] = min(dry_bulb_temps)
+            else:
+                summary_stats['max_temp'] = None
+                summary_stats['min_temp'] = None
+
+            # Get max rainfall
+            rainfalls = [getattr(record, 'rainfall') for record in results.items
+                         if getattr(record, 'rainfall') is not None and getattr(record, 'rainfall') > 0]
+            summary_stats['max_rainfall'] = max(rainfalls) if rainfalls else None
+        else:
+            summary_stats = {'max_temp': None, 'min_temp': None, 'max_rainfall': None}
+
         return jsonify({
             'success': True,
             'data': response_data,
             'total': results.total,
             'pages': results.pages,
-            'current_page': results.page
+            'current_page': results.page,
+            'summary': summary_stats
         })
 
     except Exception as e:
@@ -130,7 +158,7 @@ def detect_outliers():
         data = request.json
         column = data.get('column')
         threshold = float(data.get('threshold', 3))
-        location = data.get('location')
+        locations = data.get('location')  # Can be single location or list
 
         if not column:
             return jsonify({'success': False, 'error': 'Column is required'})
@@ -138,9 +166,14 @@ def detect_outliers():
         # Build base query
         query = WeatherData.query.filter(getattr(WeatherData, column).isnot(None))
 
-        # Apply location filter if specified
-        if location:
-            query = query.filter(WeatherData.location == location)
+        # Apply location filter if specified - FIXED for multi-select
+        if locations:
+            if isinstance(locations, list) and len(locations) > 0:
+                valid_locations = [loc for loc in locations if loc and loc.strip()]
+                if valid_locations:
+                    query = query.filter(WeatherData.location.in_(valid_locations))
+            elif isinstance(locations, str) and locations.strip():
+                query = query.filter(WeatherData.location == locations.strip())
 
         # Apply date filters if specified
         if data.get('start_date'):
@@ -206,29 +239,43 @@ def download_advanced_data():
         if data.get('end_date'):
             end_date = datetime.strptime(data['end_date'], '%Y-%m-%d').date()
             query = query.filter(WeatherData.date <= end_date)
-        if data.get('location'):
-            query = query.filter(WeatherData.location == data['location'])
+
+        # Location filter - FIXED for multi-select
+        locations = data.get('location')
+        if locations:
+            if isinstance(locations, list) and len(locations) > 0:
+                valid_locations = [loc for loc in locations if loc and loc.strip()]
+                if valid_locations:
+                    query = query.filter(WeatherData.location.in_(valid_locations))
+            elif isinstance(locations, str) and locations.strip():
+                query = query.filter(WeatherData.location == locations.strip())
 
         # Column selection
         selected_columns = data.get('columns', [])
         if not selected_columns:
             selected_columns = ['date', 'location', 'station_index', 'daily_max_temp', 'daily_min_temp', 'rainfall']
 
-        # Temperature filters
-        if data.get('min_temp_min'):
-            query = query.filter(WeatherData.daily_min_temp >= float(data['min_temp_min']))
-        if data.get('min_temp_max'):
-            query = query.filter(WeatherData.daily_min_temp <= float(data['min_temp_max']))
-        if data.get('max_temp_min'):
-            query = query.filter(WeatherData.daily_max_temp >= float(data['max_temp_min']))
-        if data.get('max_temp_max'):
-            query = query.filter(WeatherData.daily_max_temp <= float(data['max_temp_max']))
+        # Apply other filters
+        def apply_filter(column, min_key, max_key):
+            nonlocal query
+            if data.get(min_key):
+                try:
+                    query = query.filter(getattr(WeatherData, column) >= float(data[min_key]))
+                except:
+                    pass
+            if data.get(max_key):
+                try:
+                    query = query.filter(getattr(WeatherData, column) <= float(data[max_key]))
+                except:
+                    pass
 
-        # Rainfall filter
-        if data.get('rainfall_min'):
-            query = query.filter(WeatherData.rainfall >= float(data['rainfall_min']))
-        if data.get('rainfall_max'):
-            query = query.filter(WeatherData.rainfall <= float(data['rainfall_max']))
+        apply_filter('daily_min_temp', 'min_temp_min', 'min_temp_max')
+        apply_filter('daily_max_temp', 'max_temp_min', 'max_temp_max')
+        apply_filter('rainfall', 'rainfall_min', 'rainfall_max')
+        apply_filter('relative_humidity', 'humidity_min', 'humidity_max')
+        apply_filter('wind_speed', 'wind_speed_min', 'wind_speed_max')
+        apply_filter('mean_sea_level_pressure', 'pressure_min', 'pressure_max')
+        apply_filter('total_cloud_cover', 'cloud_cover_min', 'cloud_cover_max')
 
         # Get results
         results = query.order_by(WeatherData.date.desc()).all()

@@ -1,3 +1,9 @@
+// Global variables
+let currentOutliers = [];
+let currentOutliersPage = 1;
+let selectedLocations = [];
+let allLocations = [];
+
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize the dashboard
     initDashboard();
@@ -12,6 +18,9 @@ function initDashboard() {
 
     // Set default date range to last 30 days
     setDefaultDateRange();
+
+    // Initialize location selector
+    initLocationSelector();
 }
 
 function setupEventListeners() {
@@ -59,6 +68,108 @@ function setupEventListeners() {
     document.getElementById('perPage').addEventListener('change', function() {
         executeQuery();
     });
+}
+
+function initLocationSelector() {
+    const locationSelect = document.getElementById('locationSelect');
+    const locationDropdown = document.getElementById('locationDropdown');
+    const locationSearch = document.getElementById('locationSearch');
+    const locationOptions = document.getElementById('locationOptions');
+    const selectedLocationsContainer = document.getElementById('selectedLocations');
+    const locationPlaceholder = document.getElementById('locationPlaceholder');
+
+    // Populate allLocations array from HTML
+    allLocations = Array.from(locationOptions.querySelectorAll('.location-option')).map(option => option.dataset.value);
+
+    // Toggle dropdown
+    locationSelect.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const isVisible = locationDropdown.style.display === 'block';
+        locationDropdown.style.display = isVisible ? 'none' : 'block';
+        if (!isVisible) {
+            locationSearch.focus();
+        }
+    });
+
+    // Search functionality
+    locationSearch.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        const options = locationOptions.querySelectorAll('.location-option');
+
+        options.forEach(option => {
+            const text = option.textContent.toLowerCase();
+            option.style.display = text.includes(searchTerm) ? 'block' : 'none';
+        });
+    });
+
+    // Handle option selection
+    locationOptions.addEventListener('click', function(e) {
+        if (e.target.classList.contains('location-option')) {
+            const value = e.target.dataset.value;
+
+            if (!selectedLocations.includes(value)) {
+                selectedLocations.push(value);
+                updateSelectedLocations();
+                e.target.classList.add('selected');
+            }
+
+            locationSearch.value = '';
+            filterLocationOptions('');
+        }
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!locationSelect.contains(e.target) && !locationDropdown.contains(e.target)) {
+            locationDropdown.style.display = 'none';
+        }
+    });
+
+    // Prevent dropdown from closing when clicking inside
+    locationDropdown.addEventListener('click', function(e) {
+        e.stopPropagation();
+    });
+
+    function updateSelectedLocations() {
+        selectedLocationsContainer.innerHTML = '';
+
+        if (selectedLocations.length === 0) {
+            locationPlaceholder.style.display = 'block';
+            return;
+        }
+
+        locationPlaceholder.style.display = 'none';
+
+        selectedLocations.forEach(location => {
+            const tag = document.createElement('div');
+            tag.className = 'location-tag';
+            tag.innerHTML = `
+                <span>${location}</span>
+                <span class="remove" onclick="removeLocation('${location}')">×</span>
+            `;
+            selectedLocationsContainer.appendChild(tag);
+        });
+    }
+
+    function filterLocationOptions(searchTerm) {
+        const options = locationOptions.querySelectorAll('.location-option');
+        options.forEach(option => {
+            const text = option.textContent.toLowerCase();
+            option.style.display = text.includes(searchTerm.toLowerCase()) ? 'block' : 'none';
+        });
+    }
+
+    // Make removeLocation function globally accessible
+    window.removeLocation = function(location) {
+        selectedLocations = selectedLocations.filter(loc => loc !== location);
+        updateSelectedLocations();
+
+        // Update option styling
+        const option = locationOptions.querySelector(`[data-value="${location}"]`);
+        if (option) {
+            option.classList.remove('selected');
+        }
+    };
 }
 
 function loadColumns() {
@@ -153,10 +264,15 @@ function applyQuickFilter(type) {
 }
 
 function collectFilters() {
+    // Helper function to convert string to number or return undefined if empty
+    function toNumber(value) {
+        return value === '' ? undefined : Number(value);
+    }
+
     const filters = {
         start_date: document.getElementById('startDate').value,
         end_date: document.getElementById('endDate').value,
-        location: document.getElementById('location').value,
+        location: selectedLocations.length > 0 ? selectedLocations : undefined,
 
         // Temperature - convert to numbers
         min_temp_min: toNumber(document.getElementById('minTempMin').value),
@@ -187,11 +303,6 @@ function collectFilters() {
         // Time of day
         time_of_day: document.querySelector('.time-filter-btn.active')?.dataset.time
     };
-
-    // Helper function to convert string to number or return undefined if empty
-    function toNumber(value) {
-        return value === '' ? undefined : Number(value);
-    }
 
     // Get selected columns
     const checkboxes = document.querySelectorAll('#columnsContainer input[type="checkbox"]:checked');
@@ -318,6 +429,9 @@ function displayResults(data) {
             } else if (header === 'date' && value) {
                 // Format date
                 value = new Date(value).toLocaleDateString();
+            } else if (typeof value === 'number') {
+                // Format numbers to 2 decimal places
+                value = value.toFixed(2);
             }
 
             td.textContent = value;
@@ -379,33 +493,41 @@ function displayOutliers(outliers) {
 
 function updateSummary(data) {
     if (data.length === 0) {
-        document.getElementById('locationsCount').textContent = '0';
         document.getElementById('maxTemp').textContent = 'N/A';
         document.getElementById('minTemp').textContent = 'N/A';
         document.getElementById('maxRainfall').textContent = 'N/A';
         return;
     }
 
-    // Max and min temperatures
-    const maxTemps = data.map(item => item.daily_max_temp).filter(val => val !== null);
-    const minTemps = data.map(item => item.daily_min_temp).filter(val => val !== null);
+    // Get max and min temperatures from daily_max_temp and daily_min_temp
+    const maxTemps = data
+        .map(item => Number(item.daily_max_temp))
+        .filter(val => !isNaN(val) && val !== null);
+
+    const minTemps = data
+        .map(item => Number(item.daily_min_temp))
+        .filter(val => !isNaN(val) && val !== null);
+
+    // Calculate overall max and min temperatures
+    let overallMaxTemp = 'N/A';
+    let overallMinTemp = 'N/A';
 
     if (maxTemps.length > 0) {
-        const maxTemp = Math.max(...maxTemps);
-        document.getElementById('maxTemp').textContent = maxTemp.toFixed(1) + '°C';
-    } else {
-        document.getElementById('maxTemp').textContent = 'N/A';
+        overallMaxTemp = Math.max(...maxTemps).toFixed(1) + '°C';
     }
 
     if (minTemps.length > 0) {
-        const minTemp = Math.min(...minTemps);
-        document.getElementById('minTemp').textContent = minTemp.toFixed(1) + '°C';
-    } else {
-        document.getElementById('minTemp').textContent = 'N/A';
+        overallMinTemp = Math.min(...minTemps).toFixed(1) + '°C';
     }
 
+    document.getElementById('maxTemp').textContent = overallMaxTemp;
+    document.getElementById('minTemp').textContent = overallMinTemp;
+
     // Max rainfall
-    const rainfalls = data.map(item => item.rainfall).filter(val => val !== null && val > 0);
+    const rainfalls = data
+        .map(item => Number(item.rainfall))
+        .filter(val => !isNaN(val) && val !== null && val > 0);
+
     if (rainfalls.length > 0) {
         const maxRainfall = Math.max(...rainfalls);
         document.getElementById('maxRainfall').textContent = maxRainfall.toFixed(1) + 'mm';
@@ -521,7 +643,11 @@ function createOutliersPaginationButton(text, page, isActive = false) {
     const button = document.createElement('button');
     button.className = `pagination-btn ${isActive ? 'active' : ''}`;
     button.textContent = text;
-    button.addEventListener('click', () => detectOutliers(page));
+    button.addEventListener('click', () => {
+        currentOutliersPage = page;
+        displayOutliers(currentOutliers);
+        updateOutliersPagination(page, Math.ceil(currentOutliers.length / 10), currentOutliers.length);
+    });
     return button;
 }
 
@@ -547,6 +673,7 @@ function downloadData() {
         a.download = `weather_data_${new Date().toISOString().split('T')[0]}.xlsx`;
         document.body.appendChild(a);
         a.click();
+        document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
         showMessage('Download completed!', 'success');
     })
@@ -559,7 +686,6 @@ function clearFilters() {
     // Clear input fields
     document.getElementById('startDate').value = '';
     document.getElementById('endDate').value = '';
-    document.getElementById('location').value = '';
     document.getElementById('minTempMin').value = '';
     document.getElementById('minTempMax').value = '';
     document.getElementById('maxTempMin').value = '';
@@ -577,6 +703,16 @@ function clearFilters() {
     document.getElementById('outlierColumn').value = '';
     document.getElementById('outlierThreshold').value = '3';
     document.getElementById('outlierLocation').value = '';
+
+    // Clear selected locations
+    selectedLocations = [];
+    document.getElementById('selectedLocations').innerHTML = '';
+    document.getElementById('locationPlaceholder').style.display = 'block';
+
+    // Remove selected styling from location options
+    document.querySelectorAll('.location-option').forEach(option => {
+        option.classList.remove('selected');
+    });
 
     // Uncheck all column checkboxes
     document.querySelectorAll('#columnsContainer input[type="checkbox"]').forEach(cb => {
@@ -603,8 +739,6 @@ function clearFilters() {
     document.getElementById('outliersPaginationContainer').innerHTML = '';
 
     // Reset summary
-    document.getElementById('totalRecords').textContent = '-';
-    document.getElementById('locationsCount').textContent = '-';
     document.getElementById('maxTemp').textContent = '-';
     document.getElementById('minTemp').textContent = '-';
     document.getElementById('maxRainfall').textContent = '-';
@@ -632,6 +766,8 @@ function showMessage(message, type) {
 
     // Auto-hide after 5 seconds
     setTimeout(() => {
-        messageDiv.remove();
+        if (messageDiv.parentNode) {
+            messageDiv.remove();
+        }
     }, 5000);
 }
