@@ -379,20 +379,12 @@ function displayOutliers(outliers) {
 
 function updateSummary(data) {
     if (data.length === 0) {
-        document.getElementById('totalRecords').textContent = '0';
         document.getElementById('locationsCount').textContent = '0';
         document.getElementById('maxTemp').textContent = 'N/A';
         document.getElementById('minTemp').textContent = 'N/A';
         document.getElementById('maxRainfall').textContent = 'N/A';
         return;
     }
-
-    // Total records
-    document.getElementById('totalRecords').textContent = data.length;
-
-    // Unique locations
-    const locations = new Set(data.map(item => item.location));
-    document.getElementById('locationsCount').textContent = locations.size;
 
     // Max and min temperatures
     const maxTemps = data.map(item => item.daily_max_temp).filter(val => val !== null);
