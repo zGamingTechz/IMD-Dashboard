@@ -13,15 +13,14 @@
         <header class="header-section">
             <div class="header-content">
                 <div class="header-icon">
-                    <img src="{{ url_for('static', filename='IMD Logo.png') }}" style="width: 80px; height: 80px;">
+                    <img src="{{ url_for('static', filename='IMD Logo.png') }}" style="width: 50px; height: 50px;">
                 </div>
                 <div class="header-text">
-                    <h1>Add Weather Data - IMD Jaipur</h1>
-                    <p>Enter meteorological observations and measurements</p>
+                    <h1>Weather Data Entry</h1>
                 </div>
                 <div style="margin-left: auto;">
                     <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary">
-                        <i class="fas fa-arrow-left"></i> Back to Dashboard
+                        <i class="fas fa-arrow-left"></i> Back
                     </a>
                 </div>
             </div>
@@ -49,41 +48,21 @@
 
                 <!-- Form Container -->
                 <div class="form-container">
-                    <div class="section-header">
-                        <i class="fas fa-cloud-sun"></i>
-                        <h3>Weather Data Entry Form</h3>
-                    </div>
-
                     <form method="POST" id="weatherDataForm" novalidate>
                         {{ csrf_token() if csrf_token }}
 
-                        <!-- Station and Location Information -->
+                        <!-- Station & Date Section -->
                         <div class="form-section">
-                            <div class="section-title">
-                                <i class="fas fa-map-marker-alt"></i>
-                                <h4>Station & Location Information</h4>
-                            </div>
-                            <div class="form-grid">
+                            <h4><i class="fas fa-map-marker-alt"></i> Station & Date</h4>
+                            <div class="form-grid-6">
                                 <div class="form-group">
                                     <label for="station_index">Station Index <span class="required">*</span></label>
                                     <input type="text" id="station_index" name="station_index" class="form-input" maxlength="20" required>
-                                    <small class="help-text">Station identification code</small>
                                 </div>
                                 <div class="form-group">
                                     <label for="location">Location <span class="required">*</span></label>
                                     <input type="text" id="location" name="location" class="form-input" maxlength="20" required>
-                                    <small class="help-text">Weather station location</small>
                                 </div>
-                            </div>
-                        </div>
-
-                        <!-- Date and Time Information -->
-                        <div class="form-section">
-                            <div class="section-title">
-                                <i class="fas fa-calendar-alt"></i>
-                                <h4>Date & Time Information</h4>
-                            </div>
-                            <div class="form-grid">
                                 <div class="form-group">
                                     <label for="year">Year <span class="required">*</span></label>
                                     <input type="number" id="year" name="year" class="form-input" min="1900" max="2100" required>
@@ -91,19 +70,19 @@
                                 <div class="form-group">
                                     <label for="month">Month <span class="required">*</span></label>
                                     <select id="month" name="month" class="form-select" required>
-                                        <option value="">Select Month</option>
-                                        <option value="1">January</option>
-                                        <option value="2">February</option>
-                                        <option value="3">March</option>
-                                        <option value="4">April</option>
+                                        <option value="">Select</option>
+                                        <option value="1">Jan</option>
+                                        <option value="2">Feb</option>
+                                        <option value="3">Mar</option>
+                                        <option value="4">Apr</option>
                                         <option value="5">May</option>
-                                        <option value="6">June</option>
-                                        <option value="7">July</option>
-                                        <option value="8">August</option>
-                                        <option value="9">September</option>
-                                        <option value="10">October</option>
-                                        <option value="11">November</option>
-                                        <option value="12">December</option>
+                                        <option value="6">Jun</option>
+                                        <option value="7">Jul</option>
+                                        <option value="8">Aug</option>
+                                        <option value="9">Sep</option>
+                                        <option value="10">Oct</option>
+                                        <option value="11">Nov</option>
+                                        <option value="12">Dec</option>
                                     </select>
                                 </div>
                                 <div class="form-group">
@@ -111,178 +90,128 @@
                                     <input type="number" id="day" name="day" class="form-input" min="1" max="31" required>
                                 </div>
                                 <div class="form-group">
-                                    <label for="hour">Hour (24-hour format)</label>
+                                    <label for="hour">Hour</label>
                                     <input type="number" id="hour" name="hour" class="form-input" min="0" max="23">
-                                    <small class="help-text">Optional: 0-23 hours</small>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Temperature Measurements -->
+                        <!-- Temperature Section -->
                         <div class="form-section">
-                            <div class="section-title">
-                                <i class="fas fa-thermometer-half"></i>
-                                <h4>Temperature Measurements (°C)</h4>
-                            </div>
-                            <div class="form-grid">
+                            <h4><i class="fas fa-thermometer-half"></i> Temperature (°C)</h4>
+                            <div class="form-grid-6">
                                 <div class="form-group">
-                                    <label for="dry_bulb_temp">Dry Bulb Temperature</label>
+                                    <label for="dry_bulb_temp">Dry Bulb</label>
                                     <input type="number" id="dry_bulb_temp" name="dry_bulb_temp" class="form-input" step="0.1" min="-50" max="60">
-                                    <small class="help-text">Current air temperature</small>
                                 </div>
                                 <div class="form-group">
-                                    <label for="wet_bulb_temp">Wet Bulb Temperature</label>
+                                    <label for="wet_bulb_temp">Wet Bulb</label>
                                     <input type="number" id="wet_bulb_temp" name="wet_bulb_temp" class="form-input" step="0.1" min="-50" max="50">
-                                    <small class="help-text">Temperature with humidity consideration</small>
                                 </div>
                                 <div class="form-group">
-                                    <label for="dew_point_temp">Dew Point Temperature</label>
+                                    <label for="dew_point_temp">Dew Point</label>
                                     <input type="number" id="dew_point_temp" name="dew_point_temp" class="form-input" step="0.1" min="-60" max="40">
-                                    <small class="help-text">Moisture content indicator</small>
                                 </div>
                                 <div class="form-group">
-                                    <label for="daily_min_temp">Daily Minimum Temperature</label>
+                                    <label for="daily_min_temp">Daily Min</label>
                                     <input type="number" id="daily_min_temp" name="daily_min_temp" class="form-input" step="0.1" min="-50" max="50">
                                 </div>
                                 <div class="form-group">
-                                    <label for="daily_mean_temp">Daily Mean Temperature</label>
+                                    <label for="daily_mean_temp">Daily Mean</label>
                                     <input type="number" id="daily_mean_temp" name="daily_mean_temp" class="form-input" step="0.1" min="-40" max="55">
                                 </div>
                                 <div class="form-group">
-                                    <label for="daily_max_temp">Daily Maximum Temperature</label>
+                                    <label for="daily_max_temp">Daily Max</label>
                                     <input type="number" id="daily_max_temp" name="daily_max_temp" class="form-input" step="0.1" min="-30" max="60">
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Pressure Measurements -->
+                        <!-- Pressure, Humidity & Wind Section -->
                         <div class="form-section">
-                            <div class="section-title">
-                                <i class="fas fa-weight"></i>
-                                <h4>Pressure Measurements (hPa/mb)</h4>
-                            </div>
-                            <div class="form-grid">
+                            <h4><i class="fas fa-wind"></i> Pressure, Humidity & Wind</h4>
+                            <div class="form-grid-6">
                                 <div class="form-group">
-                                    <label for="station_level_pressure">Station Level Pressure</label>
+                                    <label for="station_level_pressure">Station Pressure (hPa)</label>
                                     <input type="number" id="station_level_pressure" name="station_level_pressure" class="form-input" step="0.1" min="800" max="1100">
-                                    <small class="help-text">Atmospheric pressure at station level</small>
                                 </div>
                                 <div class="form-group">
-                                    <label for="mean_sea_level_pressure">Mean Sea Level Pressure</label>
+                                    <label for="mean_sea_level_pressure">Sea Level Pressure (hPa)</label>
                                     <input type="number" id="mean_sea_level_pressure" name="mean_sea_level_pressure" class="form-input" step="0.1" min="950" max="1050">
-                                    <small class="help-text">Pressure adjusted to sea level</small>
                                 </div>
-                            </div>
-                        </div>
-
-                        <!-- Humidity and Moisture -->
-                        <div class="form-section">
-                            <div class="section-title">
-                                <i class="fas fa-tint"></i>
-                                <h4>Humidity & Moisture</h4>
-                            </div>
-                            <div class="form-grid">
                                 <div class="form-group">
-                                    <label for="relative_humidity">Relative Humidity (%)</label>
+                                    <label for="relative_humidity">Humidity (%)</label>
                                     <input type="number" id="relative_humidity" name="relative_humidity" class="form-input" min="0" max="100">
-                                    <small class="help-text">Percentage of moisture in air</small>
                                 </div>
                                 <div class="form-group">
                                     <label for="vapor_pressure">Vapor Pressure (hPa)</label>
                                     <input type="number" id="vapor_pressure" name="vapor_pressure" class="form-input" step="0.1" min="0" max="100">
-                                    <small class="help-text">Water vapor pressure in atmosphere</small>
                                 </div>
-                            </div>
-                        </div>
-
-                        <!-- Wind Measurements -->
-                        <div class="form-section">
-                            <div class="section-title">
-                                <i class="fas fa-wind"></i>
-                                <h4>Wind Measurements</h4>
-                            </div>
-                            <div class="form-grid">
                                 <div class="form-group">
-                                    <label for="wind_direction">Wind Direction (degrees)</label>
+                                    <label for="wind_direction">Wind Dir (°)</label>
                                     <input type="number" id="wind_direction" name="wind_direction" class="form-input" min="0" max="360">
-                                    <small class="help-text">0-360 degrees from North</small>
                                 </div>
                                 <div class="form-group">
                                     <label for="wind_speed">Wind Speed (m/s)</label>
                                     <input type="number" id="wind_speed" name="wind_speed" class="form-input" step="0.1" min="0" max="200">
-                                    <small class="help-text">Wind speed in meters per second</small>
-                                </div>
-                                <div class="form-group">
-                                    <label for="wind_gust">Wind Gust (m/s)</label>
-                                    <input type="number" id="wind_gust" name="wind_gust" class="form-input" step="0.1" min="0" max="300">
-                                    <small class="help-text">Maximum wind gust speed</small>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Visibility and Cloud Cover -->
+                        <!-- Visibility, Clouds & Weather Section -->
                         <div class="form-section">
-                            <div class="section-title">
-                                <i class="fas fa-eye"></i>
-                                <h4>Visibility & Cloud Cover</h4>
-                            </div>
-                            <div class="form-grid">
+                            <h4><i class="fas fa-cloud"></i> Visibility, Clouds & Weather</h4>
+                            <div class="form-grid-6">
                                 <div class="form-group">
                                     <label for="visibility">Visibility (km)</label>
                                     <input type="number" id="visibility" name="visibility" class="form-input" step="0.1" min="0" max="50">
-                                    <small class="help-text">Horizontal visibility distance</small>
                                 </div>
                                 <div class="form-group">
-                                    <label for="total_cloud_cover">Total Cloud Cover (oktas)</label>
+                                    <label for="total_cloud_cover">Total Cloud (oktas)</label>
                                     <input type="number" id="total_cloud_cover" name="total_cloud_cover" class="form-input" min="0" max="8">
-                                    <small class="help-text">0-8 oktas (eighths of sky covered)</small>
                                 </div>
                                 <div class="form-group">
-                                    <label for="low_cloud_amount">Low Cloud Amount (oktas)</label>
+                                    <label for="low_cloud_amount">Low Cloud (oktas)</label>
                                     <input type="number" id="low_cloud_amount" name="low_cloud_amount" class="form-input" min="0" max="8">
                                 </div>
                                 <div class="form-group">
-                                    <label for="medium_cloud_amount">Medium Cloud Amount (oktas)</label>
+                                    <label for="medium_cloud_amount">Med Cloud (oktas)</label>
                                     <input type="number" id="medium_cloud_amount" name="medium_cloud_amount" class="form-input" min="0" max="8">
                                 </div>
                                 <div class="form-group">
-                                    <label for="high_cloud_amount">High Cloud Amount (oktas)</label>
+                                    <label for="high_cloud_amount">High Cloud (oktas)</label>
                                     <input type="number" id="high_cloud_amount" name="high_cloud_amount" class="form-input" min="0" max="8">
                                 </div>
                                 <div class="form-group">
-                                    <label for="cloud_type_low">Cloud Type Low (code)</label>
-                                    <input type="number" id="cloud_type_low" name="cloud_type_low" class="form-input" min="0" max="10">
-                                    <small class="help-text">WMO cloud type code</small>
-                                </div>
-                                <div class="form-group">
-                                    <label for="cloud_type_high">Cloud Type High (code)</label>
-                                    <input type="number" id="cloud_type_high" name="cloud_type_high" class="form-input" min="0" max="10">
-                                    <small class="help-text">WMO cloud type code</small>
+                                    <label for="rainfall">Rainfall (mm)</label>
+                                    <input type="number" id="rainfall" name="rainfall" class="form-input" step="0.1" min="0" max="1000">
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Weather Phenomena -->
+                        <!-- Additional Parameters Section -->
                         <div class="form-section">
-                            <div class="section-title">
-                                <i class="fas fa-cloud-rain"></i>
-                                <h4>Weather Phenomena</h4>
-                            </div>
-                            <div class="form-grid">
+                            <h4><i class="fas fa-chart-line"></i> Additional Parameters</h4>
+                            <div class="form-grid-6">
                                 <div class="form-group">
-                                    <label for="rainfall">Rainfall (mm)</label>
-                                    <input type="number" id="rainfall" name="rainfall" class="form-input" step="0.1" min="0" max="1000">
-                                    <small class="help-text">Precipitation amount</small>
+                                    <label for="wind_gust">Wind Gust (m/s)</label>
+                                    <input type="number" id="wind_gust" name="wind_gust" class="form-input" step="0.1" min="0" max="300">
+                                </div>
+                                <div class="form-group">
+                                    <label for="cloud_type_low">Cloud Type Low</label>
+                                    <input type="number" id="cloud_type_low" name="cloud_type_low" class="form-input" min="0" max="10">
+                                </div>
+                                <div class="form-group">
+                                    <label for="cloud_type_high">Cloud Type High</label>
+                                    <input type="number" id="cloud_type_high" name="cloud_type_high" class="form-input" min="0" max="10">
                                 </div>
                                 <div class="form-group">
                                     <label for="evaporation">Evaporation (mm)</label>
                                     <input type="number" id="evaporation" name="evaporation" class="form-input" step="0.1" min="0" max="50">
-                                    <small class="help-text">Daily evaporation rate</small>
                                 </div>
                                 <div class="form-group">
                                     <label for="sunshine_hours">Sunshine Hours</label>
                                     <input type="number" id="sunshine_hours" name="sunshine_hours" class="form-input" step="0.1" min="0" max="14">
-                                    <small class="help-text">Hours of direct sunlight</small>
                                 </div>
                             </div>
                         </div>
@@ -290,16 +219,16 @@
                         <!-- Action Buttons -->
                         <div class="form-actions">
                             <button type="button" class="btn btn-warning" onclick="validateForm()">
-                                <i class="fas fa-check-circle"></i> Validate Data
+                                <i class="fas fa-check-circle"></i> Validate
                             </button>
                             <button type="submit" class="btn btn-primary" id="submitBtn">
-                                <i class="fas fa-save"></i> Add Weather Data
+                                <i class="fas fa-save"></i> Add Data
                             </button>
                             <button type="submit" class="btn btn-success" id="forceSubmitBtn" name="force_submit" value="true" style="display: none;">
-                                <i class="fas fa-exclamation-triangle"></i> Add Anyway (Ignore Warnings)
+                                <i class="fas fa-exclamation-triangle"></i> Force Add
                             </button>
                             <button type="button" class="btn btn-secondary" onclick="clearForm()">
-                                <i class="fas fa-refresh"></i> Clear Form
+                                <i class="fas fa-refresh"></i> Clear
                             </button>
                         </div>
                     </form>
@@ -311,54 +240,121 @@
     <script src="{{ url_for('static', filename='script_add_data.js') }}"></script>
 
     <style>
-        .add-data-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            width: 100%;
+        /* Base styles */
+        body {
+            background: #f8fafc;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: #2d3748;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
         }
 
-        .form-container {
-            background: rgba(44, 52, 70, 1);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 2rem;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        .main-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
-        .form-section {
-            margin-bottom: 2rem;
+        /* Header styles */
+        .header-section {
+            background: white;
             border-bottom: 1px solid #e2e8f0;
-            padding-bottom: 1.5rem;
+            padding: 0.75rem 1.5rem;
+            flex-shrink: 0;
         }
 
-        .form-section:last-child {
-            border-bottom: none;
-            margin-bottom: 0;
-        }
-
-        .section-title {
+        .header-content {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            margin-bottom: 1.25rem;
+            gap: 1rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header-text h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 0;
             color: #2d3748;
         }
 
-        .section-title i {
-            color: #667eea;
-            font-size: 1.1rem;
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            border: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            transition: all 0.2s;
         }
 
-        .section-title h4 {
-            font-size: 1.1rem;
+        .btn-outline-primary {
+            background: white;
+            color: #4299e1;
+            border: 1px solid #4299e1;
+        }
+
+        .btn-outline-primary:hover {
+            background: #4299e1;
+            color: white;
+        }
+
+        /* Content wrapper */
+        .content-wrapper {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            background: #f8fafc;
+        }
+
+        .add-data-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            height: 100%;
+        }
+
+        .form-container {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            height: calc(100vh - 140px);
+            overflow-y: auto;
+        }
+
+        /* Form sections */
+        .form-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-section h4 {
+            font-size: 1rem;
             font-weight: 600;
-            margin: 0;
+            margin: 0 0 0.75rem 0;
+            color: #4a5568;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 0.5rem;
         }
 
-        .form-grid {
+        .form-section h4 i {
+            color: #4299e1;
+            font-size: 0.875rem;
+        }
+
+        /* Form grid */
+        .form-grid-6 {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 1.25rem;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 0.75rem;
         }
 
         .form-group {
@@ -367,80 +363,132 @@
         }
 
         .form-group label {
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
             color: #4a5568;
-            font-size: 0.9rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
         }
 
         .required {
             color: #e53e3e;
-            font-size: 0.8rem;
         }
 
-        .help-text {
-            color: #718096;
-            font-size: 0.75rem;
-            margin-top: 0.25rem;
-            font-style: italic;
+        .form-input, .form-select {
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            background: white;
+            transition: border-color 0.2s;
+            width: 100%;
+            color: #2d3748;
         }
 
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: #4299e1;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+        }
+
+        /* Action buttons */
         .form-actions {
             display: flex;
-            gap: 1rem;
+            gap: 0.75rem;
             justify-content: center;
-            flex-wrap: wrap;
-            margin-top: 2rem;
+            margin-top: 1.5rem;
             padding-top: 1.5rem;
-            border-top: 2px solid #e2e8f0;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .btn-primary {
+            background: #4299e1;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #3182ce;
+        }
+
+        .btn-warning {
+            background: #f6ad55;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #ed8936;
+        }
+
+        .btn-success {
+            background: #48bb78;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #38a169;
+        }
+
+        .btn-secondary {
+            background: #a0aec0;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #718096;
+        }
+
+        /* Messages */
+        .message {
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .message-success {
+            background: #f0fff4;
+            color: #22543d;
+            border: 1px solid #9ae6b4;
+        }
+
+        .message-error {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 1px solid #feb2b2;
+        }
+
+        .message-info {
+            background: #ebf8ff;
+            color: #2a4365;
+            border: 1px solid #90cdf4;
         }
 
         .message-warning {
             background: #fffbeb;
             color: #92400e;
-            border-left: 4px solid #f59e0b;
+            border: 1px solid #f6ad55;
         }
 
-        .message-warning ul {
-            margin: 0.5rem 0 0 1rem;
-            padding: 0;
-        }
-
-        .message-warning li {
-            margin: 0.25rem 0;
+        /* Responsive design */
+        @media (max-width: 1200px) {
+            .form-grid-6 {
+                grid-template-columns: repeat(4, 1fr);
+            }
         }
 
         @media (max-width: 768px) {
-            .form-container {
-                padding: 1.5rem;
-                border-radius: 15px;
-            }
-
-            .form-grid {
-                grid-template-columns: 1fr;
-                gap: 1rem;
-            }
-
-            .form-actions {
-                flex-direction: column;
-                align-items: center;
+            .form-grid-6 {
+                grid-template-columns: repeat(3, 1fr);
             }
 
             .header-content {
                 flex-direction: column;
                 text-align: center;
-                gap: 1rem;
+                gap: 0.5rem;
             }
 
-            .header-content > div:last-child {
-                margin-left: 0 !important;
-            }
-        }
-
-        @media (max-width: 480px) {
             .content-wrapper {
                 padding: 0.5rem;
             }
@@ -448,11 +496,22 @@
             .form-container {
                 padding: 1rem;
             }
+        }
 
-            .section-title {
+        @media (max-width: 600px) {
+            .form-grid-6 {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .form-grid-6 {
+                grid-template-columns: 1fr;
+            }
+
+            .form-actions {
                 flex-direction: column;
-                align-items: flex-start;
-                gap: 0.5rem;
+                align-items: center;
             }
         }
     </style>
