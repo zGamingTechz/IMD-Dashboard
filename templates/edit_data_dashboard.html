@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Weather Data - IMD Jaipur</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="main-container">
+        <!-- Header Section -->
+        <header class="header-section">
+            <div class="header-content">
+                <div class="header-icon">
+                    <img src="{{ url_for('static', filename='IMD Logo.png') }}" style="width: 50px; height: 50px;">
+                </div>
+                <div class="header-text">
+                    <h1>Edit Weather Data</h1>
+                </div>
+                <div style="margin-left: auto;">
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left"></i> Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="content-wrapper">
+            <div class="edit-data-container">
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div id="messageContainer">
+                            {% for category, message in messages %}
+                                <div class="message message-{{ 'success' if category == 'success' else 'error' if category == 'error' else 'warning' if category == 'warning' else 'info' }}">
+                                    <i class="fas fa-{{ 'check-circle' if category == 'success' else 'exclamation-circle' if category == 'error' else 'info-circle' if category == 'info' else 'exclamation-triangle' }}"></i>
+                                    {{ message }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                <!-- Search Form -->
+                <div class="form-container">
+                    <form method="POST" action="{{ url_for('edit_data.edit_data_dashboard') }}">
+                        <div class="form-section">
+                            <h4><i class="fas fa-search"></i> Find Records to Edit</h4>
+                            <div class="form-grid-4">
+                                <div class="form-group">
+                                    <label for="station_index">Station Index <span class="required">*</span></label>
+                                    <input type="text" id="station_index" name="station_index" class="form-input" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="year">Year <span class="required">*</span></label>
+                                    <input type="number" id="year" name="year" class="form-input" min="1900" max="2100" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="month">Month <span class="required">*</span></label>
+                                    <select id="month" name="month" class="form-select" required>
+                                        <option value="">Select</option>
+                                        {% for i in range(1, 13) %}
+                                            <option value="{{ i }}">{{ i }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="day">Day <span class="required">*</span></label>
+                                    <input type="number" id="day" name="day" class="form-input" min="1" max="31" required>
+                                </div>
+                            </div>
+                            <div class="form-grid-4">
+                                <div class="form-group">
+                                    <label for="hour">Hour (Optional)</label>
+                                    <input type="number" id="hour" name="hour" class="form-input" min="0" max="23">
+                                </div>
+                                <div class="form-group" style="grid-column: span 3;">
+                                    <button type="submit" class="btn btn-primary" style="width: 100%;">
+                                        <i class="fas fa-search"></i> Find Records
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* Base styles */
+        body {
+            background: #f8fafc;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: #2d3748;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .main-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header styles */
+        .header-section {
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 0.75rem 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header-text h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 0;
+            color: #2d3748;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            border: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .btn-outline-primary {
+            background: white;
+            color: #4299e1;
+            border: 1px solid #4299e1;
+        }
+
+        .btn-outline-primary:hover {
+            background: #4299e1;
+            color: white;
+        }
+
+        /* Content wrapper */
+        .content-wrapper {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            background: #f8fafc;
+        }
+
+        .add-data-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            height: 100%;
+        }
+
+        .form-container {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            height: calc(100vh - 140px);
+            overflow-y: auto;
+        }
+
+        /* Form sections */
+        .form-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-section h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 0 0 0.75rem 0;
+            color: #4a5568;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 0.5rem;
+        }
+
+        .form-section h4 i {
+            color: #4299e1;
+            font-size: 0.875rem;
+        }
+
+        /* Form grid */
+        .form-grid-6 {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 0.75rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+            color: #4a5568;
+        }
+
+        .required {
+            color: #e53e3e;
+        }
+
+        .form-input, .form-select {
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            background: white;
+            transition: border-color 0.2s;
+            width: 100%;
+            color: #2d3748;
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: #4299e1;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+        }
+
+        /* Action buttons */
+        .form-actions {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: center;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .btn-primary {
+            background: #4299e1;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #3182ce;
+        }
+
+        .btn-warning {
+            background: #f6ad55;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #ed8936;
+        }
+
+        .btn-success {
+            background: #48bb78;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #38a169;
+        }
+
+        .btn-secondary {
+            background: #a0aec0;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #718096;
+        }
+
+        /* Messages */
+        .message {
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .message-success {
+            background: #f0fff4;
+            color: #22543d;
+            border: 1px solid #9ae6b4;
+        }
+
+        .message-error {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 1px solid #feb2b2;
+        }
+
+        .message-info {
+            background: #ebf8ff;
+            color: #2a4365;
+            border: 1px solid #90cdf4;
+        }
+
+        .message-warning {
+            background: #fffbeb;
+            color: #92400e;
+            border: 1px solid #f6ad55;
+        }
+
+        /* Responsive design */
+        @media (max-width: 1200px) {
+            .form-grid-6 {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .form-grid-6 {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+                gap: 0.5rem;
+            }
+
+            .content-wrapper {
+                padding: 0.5rem;
+            }
+
+            .form-container {
+                padding: 1rem;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .form-grid-6 {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .form-grid-6 {
+                grid-template-columns: 1fr;
+            }
+
+            .form-actions {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+
+        .edit-data-container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .form-grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.75rem;
+        }
+
+        @media (max-width: 768px) {
+            .form-grid-4 {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .form-grid-4 {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</body>
+</html>

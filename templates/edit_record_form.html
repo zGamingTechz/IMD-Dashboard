@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Record - IMD Jaipur</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="main-container">
+        <!-- Header Section -->
+        <header class="header-section">
+            <div class="header-content">
+                <div class="header-icon">
+                    <img src="{{ url_for('static', filename='IMD Logo.png') }}" style="width: 50px; height: 50px;">
+                </div>
+                <div class="header-text">
+                    <h1>Edit Weather Record</h1>
+                    <p>{{ record.location }} ({{ record.station_index }}) - {{ record.date.strftime('%Y-%m-%d') if record.date else '' }}</p>
+                </div>
+                <div style="margin-left: auto;">
+                    <a href="{{ url_for('edit_data.edit_data_dashboard') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="content-wrapper">
+            <div class="edit-data-container">
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div id="messageContainer">
+                            {% for category, message in messages %}
+                                <div class="message message-{{ 'success' if category == 'success' else 'error' if category == 'error' else 'info' }}">
+                                    <i class="fas fa-{{ 'check-circle' if category == 'success' else 'exclamation-circle' if category == 'error' else 'info-circle' }}"></i>
+                                    {{ message }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                <!-- Form Container -->
+                <div class="form-container">
+                    <form method="POST" id="weatherDataForm">
+                        <!-- Station & Date Section -->
+                        <div class="form-section">
+                            <h4><i class="fas fa-map-marker-alt"></i> Station & Date</h4>
+                            <div class="form-grid-6">
+                                <div class="form-group">
+                                    <label for="station_index">Station Index <span class="required">*</span></label>
+                                    <input type="text" id="station_index" name="station_index" class="form-input" value="{{ record.station_index }}" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="location">Location <span class="required">*</span></label>
+                                    <input type="text" id="location" name="location" class="form-input" value="{{ record.location }}" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="year">Year <span class="required">*</span></label>
+                                    <input type="number" id="year" name="year" class="form-input" value="{{ record.year }}" min="1900" max="2100" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="month">Month <span class="required">*</span></label>
+                                    <input type="number" id="month" name="month" class="form-input" value="{{ record.month }}" min="1" max="12" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="day">Day <span class="required">*</span></label>
+                                    <input type="number" id="day" name="day" class="form-input" value="{{ record.day }}" min="1" max="31" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="hour">Hour</label>
+                                    <input type="number" id="hour" name="hour" class="form-input" value="{{ record.hour if record.hour is not none }}" min="0" max="23">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Temperature Section -->
+                        <div class="form-section">
+                            <h4><i class="fas fa-thermometer-half"></i> Temperature (°C)</h4>
+                            <div class="form-grid-6">
+                                <div class="form-group">
+                                    <label for="dry_bulb_temp">Dry Bulb</label>
+                                    <input type="number" id="dry_bulb_temp" name="dry_bulb_temp" class="form-input" step="0.1" value="{{ record.dry_bulb_temp if record.dry_bulb_temp is not none }}">
+                                </div>
+                                <div class="form-group">
+                                    <label for="wet_bulb_temp">Wet Bulb</label>
+                                    <input type="number" id="wet_bulb_temp" name="wet_bulb_temp" class="form-input" step="0.1" value="{{ record.wet_bulb_temp if record.wet_bulb_temp is not none }}">
+                                </div>
+                                <div class="form-group">
+                                    <label for="dew_point_temp">Dew Point</label>
+                                    <input type="number" id="dew_point_temp" name="dew_point_temp" class="form-input" step="0.1" value="{{ record.dew_point_temp if record.dew_point_temp is not none }}">
+                                </div>
+                                <div class="form-group">
+                                    <label for="daily_min_temp">Daily Min</label>
+                                    <input type="number" id="daily_min_temp" name="daily_min_temp" class="form-input" step="0.1" value="{{ record.daily_min_temp if record.daily_min_temp is not none }}">
+                                </div>
+                                <div class="form-group">
+                                    <label for="daily_mean_temp">Daily Mean</label>
+                                    <input type="number" id="daily_mean_temp" name="daily_mean_temp" class="form-input" step="0.1" value="{{ record.daily_mean_temp if record.daily_mean_temp is not none }}">
+                                </div>
+                                <div class="form-group">
+                                    <label for="daily_max_temp">Daily Max</label>
+                                    <input type="number" id="daily_max_temp" name="daily_max_temp" class="form-input" step="0.1" value="{{ record.daily_max_temp if record.daily_max_temp is not none }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pressure, Humidity & Wind Section -->
+                        <div class="form-section">
+                            <h4><i class="fas fa-wind"></i> Pressure, Humidity & Wind</h4>
+                            <div class="form-grid-6">
+                                <div class="form-group">
+                                    <label for="station_level_pressure">Station Pressure (hPa)</label>
+                                    <input type="number" id="station_level_pressure" name="station_level_pressure" class="form-input" step="0.1" value="{{ record.station_level_pressure if record.station_level_pressure is not none }}">
+                                </div>
+                                <div class="form-group">
+                                    <label for="mean_sea_level_pressure">Sea Level Pressure (hPa)</label>
+                                    <input type="number" id="mean_sea_level_pressure" name="mean_sea_level_pressure" class="form-input" step="0.1" value="{{ record.mean_sea_level_pressure if record.mean_sea_level_pressure is not none }}">
+                                </div>
+                                <div class="form-group">
+                                    <label for="relative_humidity">Humidity (%)</label>
+                                    <input type="number" id="relative_humidity" name="relative_humidity" class="form-input" value="{{ record.relative_humidity if record.relative_humidity is not none }}">
+                                </div>
+                                <div class="form-group">
+                                    <label for="vapor_pressure">Vapor Pressure (hPa)</label>
+                                    <input type="number" id="vapor_pressure" name="vapor_pressure" class="form-input" step="0.1" value="{{ record.vapor_pressure if record.vapor_pressure is not none }}">
+                                </div>
+                                <div class="form-group">
+                                    <label for="wind_direction">Wind Dir (°)</label>
+                                    <input type="number" id="wind_direction" name="wind_direction" class="form-input" value="{{ record.wind_direction if record.wind_direction is not none }}">
+                                </div>
+                                <div class="form-group">
+                                    <label for="wind_speed">Wind Speed (m/s)</label>
+                                    <input type="number" id="wind_speed" name="wind_speed" class="form-input" step="0.1" value="{{ record.wind_speed if record.wind_speed is not none }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Visibility, Clouds & Weather Section -->
+                        <div class="form-section">
+                            <h4><i class="fas fa-cloud"></i> Visibility, Clouds & Weather</h4>
+                            <div class="form-grid-6">
+                                <div class="form-group">
+                                    <label for="visibility">Visibility (km)</label>
+                                    <input type="number" id="visibility" name="visibility" class="form-input" step="0.1" value="{{ record.visibility if record.visibility is not none }}">
+                                </div>
+                                <div class="form-group">
+                                    <label for="total_cloud_cover">Total Cloud (oktas)</label>
+                                    <input type="number" id="total_cloud_cover" name="total_cloud_cover" class="form-input" value="{{ record.total_cloud_cover if record.total_cloud_cover is not none }}">
+                                </div>
+                                <div class="form-group">
+                                    <label for="low_cloud_amount">Low Cloud (oktas)</label>
+                                    <input type="number" id="low_cloud_amount" name="low_cloud_amount" class="form-input" value="{{ record.low_cloud_amount if record.low_cloud_amount is not none }}">
+                                </div>
+                                <div class="form-group">
+                                    <label for="medium_cloud_amount">Med Cloud (oktas)</label>
+                                    <input type="number" id="medium_cloud_amount" name="medium_cloud_amount" class="form-input" value="{{ record.medium_cloud_amount if record.medium_cloud_amount is not none }}">
+                                </div>
+                                <div class="form-group">
+                                    <label for="high_cloud_amount">High Cloud (oktas)</label>
+                                    <input type="number" id="high_cloud_amount" name="high_cloud_amount" class="form-input" value="{{ record.high_cloud_amount if record.high_cloud_amount is not none }}">
+                                </div>
+                                <div class="form-group">
+                                    <label for="rainfall">Rainfall (mm)</label>
+                                    <input type="number" id="rainfall" name="rainfall" class="form-input" step="0.1" value="{{ record.rainfall if record.rainfall is not none }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Additional Parameters Section -->
+                        <div class="form-section">
+                            <h4><i class="fas fa-chart-line"></i> Additional Parameters</h4>
+                            <div class="form-grid-6">
+                                <div class="form-group">
+                                    <label for="wind_gust">Wind Gust (m/s)</label>
+                                    <input type="number" id="wind_gust" name="wind_gust" class="form-input" step="0.1" value="{{ record.wind_gust if record.wind_gust is not none }}">
+                                </div>
+                                <div class="form-group">
+                                    <label for="cloud_type_low">Cloud Type Low</label>
+                                    <input type="number" id="cloud_type_low" name="cloud_type_low" class="form-input" value="{{ record.cloud_type_low if record.cloud_type_low is not none }}">
+                                </div>
+                                <div class="form-group">
+                                    <label for="cloud_type_high">Cloud Type High</label>
+                                    <input type="number" id="cloud_type_high" name="cloud_type_high" class="form-input" value="{{ record.cloud_type_high if record.cloud_type_high is not none }}">
+                                </div>
+                                <div class="form-group">
+                                    <label for="evaporation">Evaporation (mm)</label>
+                                    <input type="number" id="evaporation" name="evaporation" class="form-input" step="0.1" value="{{ record.evaporation if record.evaporation is not none }}">
+                                </div>
+                                <div class="form-group">
+                                    <label for="sunshine_hours">Sunshine Hours</label>
+                                    <input type="number" id="sunshine_hours" name="sunshine_hours" class="form-input" step="0.1" value="{{ record.sunshine_hours if record.sunshine_hours is not none }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Changes
+                            </button>
+                            <a href="{{ url_for('edit_data.edit_data_dashboard') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

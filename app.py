@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify, send_file, redirect
 from routes.add_data_dashboard import add_data_bp
 from routes.advanced_query import advanced_query_bp
+from routes.edit_data import edit_data_bp
 import pandas as pd
 import os
 from datetime import datetime
@@ -37,6 +38,7 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 # Register the new route
 app.register_blueprint(add_data_bp)
 app.register_blueprint(advanced_query_bp)
+app.register_blueprint(edit_data_bp)
 
 stations = {
     "42343": "Ajmer",

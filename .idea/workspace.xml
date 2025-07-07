@@ -5,9 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="74e3d717-05c2-41b2-99d6-82db3773a030" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/routes/edit_data.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/templates/edit_data_dashboard.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/templates/edit_data_results.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/templates/edit_record_form.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/instance/weather_data.db" beforeDir="false" afterPath="$PROJECT_DIR$/instance/weather_data.db" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/add_data.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/add_data.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/dashboard.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/dashboard.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -17,8 +22,8 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
-        <option value="Python Script" />
         <option value="HTML File" />
+        <option value="Python Script" />
       </list>
     </option>
   </component>
