@@ -774,7 +774,7 @@ function showMessage(message, type) {
 
 // PDF Download functionality
 document.getElementById('downloadPdfBtn').addEventListener('click', function() {
-    const filterData = collectFilterData();
+    const filters = collectFilters();
 
     // Show loading state
     const pdfBtn = document.getElementById('downloadPdfBtn');
@@ -784,10 +784,8 @@ document.getElementById('downloadPdfBtn').addEventListener('click', function() {
 
     fetch('/advanced-query/download-pdf', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(filterData)
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(filters)
     })
     .then(response => {
         if (!response.ok) {
@@ -823,30 +821,65 @@ document.getElementById('downloadPdfBtn').addEventListener('click', function() {
     });
 });
 
-// Helper function to collect filter data
-function collectFilterData() {
-    const selectedLocations = getSelectedLocations();
-    const selectedColumns = getSelectedColumns();
+function showLoading() {
+    document.getElementById('loadingContainer').style.display = 'flex';
+}
 
-    return {
-        start_date: document.getElementById('startDate').value,
-        end_date: document.getElementById('endDate').value,
-        location: selectedLocations.length > 0 ? selectedLocations : null,
-        columns: selectedColumns.length > 0 ? selectedColumns : null,
-        min_temp_min: document.getElementById('minTempMin').value,
-        min_temp_max: document.getElementById('minTempMax').value,
-        max_temp_min: document.getElementById('maxTempMin').value,
-        max_temp_max: document.getElementById('maxTempMax').value,
-        rainfall_min: document.getElementById('rainfallMin').value,
-        rainfall_max: document.getElementById('rainfallMax').value,
-        humidity_min: document.getElementById('humidityMin').value,
-        humidity_max: document.getElementById('humidityMax').value,
-        wind_speed_min: document.getElementById('windSpeedMin').value,
-        wind_speed_max: document.getElementById('windSpeedMax').value,
-        pressure_min: document.getElementById('pressureMin').value,
-        pressure_max: document.getElementById('pressureMax').value,
-        cloud_cover_min: document.getElementById('cloudCoverMin').value,
-        cloud_cover_max: document.getElementById('cloudCoverMax').value,
-        time_of_day: getSelectedTimeOfDay()
-    };
+function hideLoading() {
+    document.getElementById('loadingContainer').style.display = 'none';
+}
+
+function showMessage(message, type) {
+    const container = document.getElementById('messageContainer');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message message-${type}`;
+    messageDiv.innerHTML = `<i class="fas fa-${type === 'error' ? 'exclamation-triangle' : type === 'success' ? 'check-circle' : 'info-circle'}"></i> ${message}`;
+
+    // Clear existing messages
+    container.innerHTML = '';
+    container.appendChild(messageDiv);
+
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        if (messageDiv.parentNode) {
+            messageDiv.remove();
+        }
+    }, 5000);
+}
+
+// Make removeLocation function globally accessible
+window.removeLocation = function(location) {
+    selectedLocations = selectedLocations.filter(loc => loc !== location);
+    updateSelectedLocations();
+
+    // Update option styling
+    const option = document.querySelector(`.location-option[data-value="${location}"]`);
+    if (option) {
+        option.classList.remove('selected');
+    }
+};
+
+// Helper function to update selected locations display
+function updateSelectedLocations() {
+    const selectedLocationsContainer = document.getElementById('selectedLocations');
+    const locationPlaceholder = document.getElementById('locationPlaceholder');
+
+    selectedLocationsContainer.innerHTML = '';
+
+    if (selectedLocations.length === 0) {
+        locationPlaceholder.style.display = 'block';
+        return;
+    }
+
+    locationPlaceholder.style.display = 'none';
+
+    selectedLocations.forEach(location => {
+        const tag = document.createElement('div');
+        tag.className = 'location-tag';
+        tag.innerHTML = `
+            <span>${location}</span>
+            <span class="remove" onclick="removeLocation('${location}')">×</span>
+        `;
+        selectedLocationsContainer.appendChild(tag);
+    });
 }
