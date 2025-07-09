@@ -549,16 +549,16 @@ def generate_plot():
         dates = [record.date for record in results]
 
         if plot_type == 'temperature_trend':
-            max_temps = [record.daily_max_temp for record in results if record.daily_max_temp is not None]
-            min_temps = [record.daily_min_temp for record in results if record.daily_min_temp is not None]
-            mean_temps = [record.daily_mean_temp for record in results if record.daily_mean_temp is not None]
-            valid_dates_max = [record.date for record in results if record.daily_max_temp is not None]
-            valid_dates_min = [record.date for record in results if record.daily_min_temp is not None]
-            valid_dates_mean = [record.date for record in results if record.daily_mean_temp is not None]
+            dry_bulb_temps = [record.dry_bulb_temp for record in results if record.dry_bulb_temp is not None]
+            wet_bulb_temps = [record.wet_bulb_temp for record in results if record.wet_bulb_temp is not None]
+            dew_point_temps = [record.dew_point_temp for record in results if record.dew_point_temp is not None]
+            valid_dates_db = [record.date for record in results if record.dry_bulb_temp is not None]
+            valid_dates_wb = [record.date for record in results if record.wet_bulb_temp is not None]
+            valid_dates_dp = [record.date for record in results if record.dew_point_temp is not None]
 
-            ax.plot(valid_dates_max, max_temps, 'r-', label='Max Temperature', linewidth=2)
-            ax.plot(valid_dates_min, min_temps, 'b-', label='Min Temperature', linewidth=2)
-            ax.plot(valid_dates_mean, mean_temps, 'g-', label='Mean Temperature', linewidth=2)
+            ax.plot(valid_dates_db, dry_bulb_temps, 'r-', label='Dry Bulb Temperature', linewidth=2)
+            ax.plot(valid_dates_wb, wet_bulb_temps, 'b-', label='Wet Bulb Temperature', linewidth=2)
+            ax.plot(valid_dates_dp, dew_point_temps, 'g-', label='Dew Point Temperature', linewidth=2)
             ax.set_title('Temperature Trend Over Time', fontsize=16, fontweight='bold')
             ax.set_ylabel('Temperature (°C)', fontsize=12)
 
