@@ -123,7 +123,7 @@ def load_excel_data(file_path):
                 station_index_raw = safe_string(row.get('station_index'))
 
                 # Skipping records where station index starts with '1'
-                if station_index_raw and (station_index_raw.startswith('1') or station_index_raw in ["42258", "42122"]):
+                if station_index_raw and (station_index_raw.startswith('1') or station_index_raw in ["42258", "42122", "42242"]):
                     filtered_station_index += 1
                     continue
 
