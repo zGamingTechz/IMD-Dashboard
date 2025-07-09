@@ -771,3 +771,82 @@ function showMessage(message, type) {
         }
     }, 5000);
 }
+
+// PDF Download functionality
+document.getElementById('downloadPdfBtn').addEventListener('click', function() {
+    const filterData = collectFilterData();
+
+    // Show loading state
+    const pdfBtn = document.getElementById('downloadPdfBtn');
+    const originalText = pdfBtn.innerHTML;
+    pdfBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating PDF...';
+    pdfBtn.disabled = true;
+
+    fetch('/advanced-query/download-pdf', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(filterData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => Promise.reject(err));
+        }
+        return response.blob();
+    })
+    .then(blob => {
+        // Create download link
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+
+        // Generate filename with timestamp
+        const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+        a.download = `weather_report_${timestamp}.pdf`;
+
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+
+        showMessage('PDF downloaded successfully!', 'success');
+    })
+    .catch(error => {
+        console.error('PDF download error:', error);
+        showMessage(error.error || 'Failed to generate PDF', 'error');
+    })
+    .finally(() => {
+        // Restore button state
+        pdfBtn.innerHTML = originalText;
+        pdfBtn.disabled = false;
+    });
+});
+
+// Helper function to collect filter data
+function collectFilterData() {
+    const selectedLocations = getSelectedLocations();
+    const selectedColumns = getSelectedColumns();
+
+    return {
+        start_date: document.getElementById('startDate').value,
+        end_date: document.getElementById('endDate').value,
+        location: selectedLocations.length > 0 ? selectedLocations : null,
+        columns: selectedColumns.length > 0 ? selectedColumns : null,
+        min_temp_min: document.getElementById('minTempMin').value,
+        min_temp_max: document.getElementById('minTempMax').value,
+        max_temp_min: document.getElementById('maxTempMin').value,
+        max_temp_max: document.getElementById('maxTempMax').value,
+        rainfall_min: document.getElementById('rainfallMin').value,
+        rainfall_max: document.getElementById('rainfallMax').value,
+        humidity_min: document.getElementById('humidityMin').value,
+        humidity_max: document.getElementById('humidityMax').value,
+        wind_speed_min: document.getElementById('windSpeedMin').value,
+        wind_speed_max: document.getElementById('windSpeedMax').value,
+        pressure_min: document.getElementById('pressureMin').value,
+        pressure_max: document.getElementById('pressureMax').value,
+        cloud_cover_min: document.getElementById('cloudCoverMin').value,
+        cloud_cover_max: document.getElementById('cloudCoverMax').value,
+        time_of_day: getSelectedTimeOfDay()
+    };
+}
