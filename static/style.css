@@ -119,7 +119,7 @@ body {
 }
 
 .sidebar-section .section-header h3 {
-    color: #2d3748;
+    color: white;
     font-size: 1.1rem;
     font-weight: 600;
 }
@@ -133,7 +133,7 @@ body {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    color: #4a5568;
+    color: white;
     font-size: 0.9rem;
     font-weight: 600;
     margin-bottom: 0.75rem;
@@ -159,7 +159,7 @@ body {
 
 .input-group label {
     display: block;
-    color: #4a5568;
+    color: white;
     font-size: 0.8rem;
     font-weight: 500;
     margin-bottom: 0.4rem;
