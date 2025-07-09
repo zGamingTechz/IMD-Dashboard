@@ -12,10 +12,15 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfbase import ttfonts
 import os
 
 advanced_query_bp = Blueprint('advanced_query', __name__, url_prefix='/advanced-query')
 
+# Hindi Font for PDF
+pdfmetrics.registerFont(TTFont('NotoSansDevanagari-Bold', 'static/fonts/NotoSansDevanagari-Bold.ttf'))
 
 @advanced_query_bp.route('/columns')
 def get_columns():
@@ -451,46 +456,36 @@ def download_pdf():
             alignment=TA_LEFT
         )
 
-        hindi_style = ParagraphStyle(
-            'Hindi',
-            parent=styles['Normal'],
-            fontSize=10,
-            alignment=TA_RIGHT
-        )
-
         # Header Section
+        eng_para = Paragraph("<b><font size=12>Indian Meteorological Department<br/>Jaipur</font></b>",
+                             styles['Normal'])
+        hindi_para = Paragraph('<font name="NotoSansDevanagari-Bold" size=12><b>भारतीय मौसम विभाग<br/>जयपुर</b></font>',
+                               styles['Normal'])
+
+        # Logo center aligned
+        logo_path = os.path.join('static', 'IMD Logo.png')
+        if os.path.exists(logo_path):
+            logo_img = Image(logo_path, width=1 * inch, height=1 * inch)
+            logo_img.hAlign = 'CENTER'
+        else:
+            logo_img = Paragraph("<b>IMD</b>", styles['Normal'])
+
+        # Header table with three columns
         header_data = [
-            ['Indian Meteorological Department<br/>Jaipur', '', 'भारतीय मौसम विभाग<br/>जयपुर']
+            [eng_para, logo_img, hindi_para]
         ]
 
         header_table = Table(header_data, colWidths=[2.5 * inch, 2 * inch, 2.5 * inch])
         header_table.setStyle(TableStyle([
             ('ALIGN', (0, 0), (0, 0), 'LEFT'),
+            ('ALIGN', (1, 0), (1, 0), 'CENTER'),
             ('ALIGN', (2, 0), (2, 0), 'RIGHT'),
-            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, -1), 10),
-            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ]))
 
         elements.append(header_table)
-        elements.append(Spacer(1, 12))
 
-        # IMD Logo
-        try:
-            logo_path = os.path.join('static', 'IMD Logo.png')
-            if os.path.exists(logo_path):
-                logo = Image(logo_path, width=1 * inch, height=1 * inch)
-                logo.hAlign = 'CENTER'
-                elements.append(logo)
-            else:
-                # Fallback if logo not found
-                logo_placeholder = Paragraph("IMD LOGO", title_style)
-                elements.append(logo_placeholder)
-        except:
-            logo_placeholder = Paragraph("IMD LOGO", title_style)
-            elements.append(logo_placeholder)
-
-        elements.append(Spacer(1, 20))
+        elements.append(Spacer(1, 6))
 
         # Title
         title = Paragraph("Weather Data Report", title_style)
