@@ -38,16 +38,16 @@ function collectFilters() {
         end_date: document.getElementById('endDate').value,
         location: document.getElementById('location').value,
 
-        daily_min_temp_min: document.getElementById('minTempMin').value,
-        daily_min_temp_max: document.getElementById('minTempMax').value,
-        daily_max_temp_min: document.getElementById('maxTempMin').value,
-        daily_max_temp_max: document.getElementById('maxTempMax').value,
+        min_temp_min: document.getElementById('minTempMin').value,
+        min_temp_max: document.getElementById('minTempMax').value,
+        max_temp_min: document.getElementById('maxTempMin').value,
+        max_temp_max: document.getElementById('maxTempMax').value,
 
         rainfall_min: document.getElementById('rainfallMin').value,
         rainfall_max: document.getElementById('rainfallMax').value,
 
-        relative_humidity_min: document.getElementById('humidityMin').value,
-        relative_humidity_max: document.getElementById('humidityMax').value,
+        humidity_min: document.getElementById('humidityMin').value,
+        humidity_max: document.getElementById('humidityMax').value,
 
         // Additional filters for new data fields
         dry_bulb_temp_min: document.getElementById('dryBulbTempMin')?.value,
