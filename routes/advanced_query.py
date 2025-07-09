@@ -6,6 +6,13 @@ import pandas as pd
 import numpy as np
 from io import BytesIO
 from sqlalchemy import or_, and_
+from reportlab.lib.pagesizes import letter, A4
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+import os
 
 advanced_query_bp = Blueprint('advanced_query', __name__, url_prefix='/advanced-query')
 
@@ -361,3 +368,254 @@ def advanced_query_page():
                            locations=locations,
                            min_date=date_range[0],
                            max_date=date_range[1])
+
+
+@advanced_query_bp.route('/download-pdf', methods=['POST'])
+def download_pdf():
+    try:
+        data = request.json
+        query = WeatherData.query
+
+        # Filters
+        if data.get('start_date'):
+            start_date = datetime.strptime(data['start_date'], '%Y-%m-%d').date()
+            query = query.filter(WeatherData.date >= start_date)
+        if data.get('end_date'):
+            end_date = datetime.strptime(data['end_date'], '%Y-%m-%d').date()
+            query = query.filter(WeatherData.date <= end_date)
+
+        # Location filter - multi-select support
+        locations = data.get('location')
+        if locations:
+            if isinstance(locations, list) and len(locations) > 0:
+                valid_locations = [loc for loc in locations if loc and loc.strip()]
+                if valid_locations:
+                    query = query.filter(WeatherData.location.in_(valid_locations))
+            elif isinstance(locations, str) and locations.strip():
+                query = query.filter(WeatherData.location == locations.strip())
+
+        # Column selection
+        selected_columns = data.get('columns', [])
+        if not selected_columns:
+            selected_columns = ['date', 'location', 'station_index', 'daily_max_temp', 'daily_min_temp', 'rainfall']
+
+        # Other filters
+        def apply_filter(column, min_key, max_key):
+            nonlocal query
+            if data.get(min_key):
+                try:
+                    query = query.filter(getattr(WeatherData, column) >= float(data[min_key]))
+                except:
+                    pass
+            if data.get(max_key):
+                try:
+                    query = query.filter(getattr(WeatherData, column) <= float(data[max_key]))
+                except:
+                    pass
+
+        apply_filter('daily_min_temp', 'min_temp_min', 'min_temp_max')
+        apply_filter('daily_max_temp', 'max_temp_min', 'max_temp_max')
+        apply_filter('rainfall', 'rainfall_min', 'rainfall_max')
+        apply_filter('relative_humidity', 'humidity_min', 'humidity_max')
+        apply_filter('wind_speed', 'wind_speed_min', 'wind_speed_max')
+        apply_filter('mean_sea_level_pressure', 'pressure_min', 'pressure_max')
+        apply_filter('total_cloud_cover', 'cloud_cover_min', 'cloud_cover_max')
+
+        results = query.order_by(WeatherData.date.desc()).all()
+
+        if not results:
+            return jsonify({'success': False, 'error': 'No data found for the specified criteria'}), 400
+
+        # Create PDF
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=18)
+
+        # Container for the 'Flowable' objects
+        elements = []
+
+        # Styles
+        styles = getSampleStyleSheet()
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=16,
+            spaceAfter=30,
+            alignment=TA_CENTER
+        )
+
+        header_style = ParagraphStyle(
+            'CustomHeader',
+            parent=styles['Normal'],
+            fontSize=12,
+            spaceAfter=20,
+            alignment=TA_LEFT
+        )
+
+        hindi_style = ParagraphStyle(
+            'Hindi',
+            parent=styles['Normal'],
+            fontSize=10,
+            alignment=TA_RIGHT
+        )
+
+        # Header Section
+        header_data = [
+            ['Indian Meteorological Department<br/>Jaipur', '', 'भारतीय मौसम विभाग<br/>जयपुर']
+        ]
+
+        header_table = Table(header_data, colWidths=[2.5 * inch, 2 * inch, 2.5 * inch])
+        header_table.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (0, 0), 'LEFT'),
+            ('ALIGN', (2, 0), (2, 0), 'RIGHT'),
+            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ]))
+
+        elements.append(header_table)
+        elements.append(Spacer(1, 12))
+
+        # IMD Logo
+        try:
+            logo_path = os.path.join('static', 'IMD Logo.png')
+            if os.path.exists(logo_path):
+                logo = Image(logo_path, width=1 * inch, height=1 * inch)
+                logo.hAlign = 'CENTER'
+                elements.append(logo)
+            else:
+                # Fallback if logo not found
+                logo_placeholder = Paragraph("IMD LOGO", title_style)
+                elements.append(logo_placeholder)
+        except:
+            logo_placeholder = Paragraph("IMD LOGO", title_style)
+            elements.append(logo_placeholder)
+
+        elements.append(Spacer(1, 20))
+
+        # Title
+        title = Paragraph("Weather Data Report", title_style)
+        elements.append(title)
+        elements.append(Spacer(1, 20))
+
+        # Basic Information
+        info_text = f"""
+        <b>Report Generation Date:</b> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}<br/>
+        <b>Data Period:</b> {data.get('start_date', 'Not specified')} to {data.get('end_date', 'Not specified')}<br/>
+        <b>Total Records:</b> {len(results)}<br/>
+        <b>Locations:</b> {', '.join(locations) if locations else 'All locations'}<br/>
+        <b>Selected Parameters:</b> {', '.join(selected_columns)}
+        """
+
+        info_para = Paragraph(info_text, header_style)
+        elements.append(info_para)
+        elements.append(Spacer(1, 20))
+
+        # Prepare data for table
+        # Column name mapping for better readability
+        column_names = {
+            'station_index': 'Station Index',
+            'location': 'Location',
+            'date': 'Date',
+            'year': 'Year',
+            'month': 'Month',
+            'day': 'Day',
+            'hour': 'Hour',
+            'station_level_pressure': 'Station Pressure (hPa)',
+            'mean_sea_level_pressure': 'Sea Level Pressure (hPa)',
+            'dry_bulb_temp': 'Dry Bulb Temp (°C)',
+            'wet_bulb_temp': 'Wet Bulb Temp (°C)',
+            'dew_point_temp': 'Dew Point Temp (°C)',
+            'daily_min_temp': 'Min Temp (°C)',
+            'daily_mean_temp': 'Mean Temp (°C)',
+            'daily_max_temp': 'Max Temp (°C)',
+            'relative_humidity': 'Relative Humidity (%)',
+            'vapor_pressure': 'Vapor Pressure (hPa)',
+            'wind_direction': 'Wind Direction (°)',
+            'wind_speed': 'Wind Speed (m/s)',
+            'wind_gust': 'Wind Gust (m/s)',
+            'visibility': 'Visibility (km)',
+            'total_cloud_cover': 'Total Cloud Cover',
+            'low_cloud_amount': 'Low Cloud Amount',
+            'medium_cloud_amount': 'Medium Cloud Amount',
+            'high_cloud_amount': 'High Cloud Amount',
+            'cloud_type_low': 'Low Cloud Type',
+            'cloud_type_high': 'High Cloud Type',
+            'rainfall': 'Rainfall (mm)',
+            'evaporation': 'Evaporation (mm)',
+            'sunshine_hours': 'Sunshine Hours'
+        }
+
+        # Table headers
+        headers = [column_names.get(col, col) for col in selected_columns]
+
+        # Table data
+        table_data = [headers]
+
+        for record in results:
+            record_dict = record.to_dict()
+            row = []
+            for col in selected_columns:
+                value = record_dict.get(col)
+                if value is None or value == '':
+                    row.append('N/A')
+                elif isinstance(value, float):
+                    row.append(f"{value:.2f}")
+                else:
+                    row.append(str(value))
+            table_data.append(row)
+
+        # Adjust column widths based on number of columns
+        num_columns = len(selected_columns)
+        if num_columns <= 4:
+            col_width = 1.5 * inch
+        elif num_columns <= 6:
+            col_width = 1.2 * inch
+        else:
+            col_width = 0.9 * inch
+
+        data_table = Table(table_data, colWidths=[col_width] * num_columns)
+
+        # Styling the table
+        data_table.setStyle(TableStyle([
+            # Header styling
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 8),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+
+            # Data rows styling
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 1), (-1, -1), 7),
+            ('ALIGN', (0, 1), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+
+            # Grid
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+
+            # Alternating row colors
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.beige, colors.white]),
+        ]))
+
+        elements.append(data_table)
+
+        doc.build(elements)
+
+        pdf_value = buffer.getvalue()
+        buffer.close()
+
+        output = BytesIO(pdf_value)
+
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"weather_report_{timestamp}.pdf"
+
+        return send_file(
+            output,
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=filename
+        )
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
